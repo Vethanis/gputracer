@@ -46,18 +46,18 @@ float rand( inout uint f) {
     f = f ^ (f >> 4);
     f *= 0x27d4eb2d;
     f = f ^ (f >> 15);
-    return fract(sin(float(f)));
+    return sin(float(f));
 }
 
 vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
     vec3 dir, ref = normalize(reflect(rd, N));
     int i = 0;
     do{
-        dir.x = rand(s) * 2.0 - 1.0;
-        dir.y = rand(s) * 2.0 - 1.0;
-        dir.z = rand(s) * 2.0 - 1.0;
+        dir.x = rand(s);
+        dir.y = rand(s);
+        dir.z = rand(s);
         i++;
-    }while(dot(dir, N) < 0.0f && i < 10);
+    }while(dot(dir, N) < 0.0f && i < 100);
     return normalize(mix(ref, normalize(dir), roughness));
 }
 
@@ -84,25 +84,33 @@ float diff(MapSample a, MapSample b){
     return a.distance - b.distance;
 }
 
+vec3 tri(vec3 r, float d){
+    return vec3(
+        modf(r.x, d),
+        modf(r.y, d),
+        modf(r.z, d)
+    );
+}
+
 MapSample map(vec3 ray){
-    MapSample a = sphere(ray, vec3(1.0f, -2.0f, 0.0f), 1.0f, 1);
-    a = join(a, sphere(ray, vec3(-1.0f, -2.0f, 0.0f), 1.0f, 2));
+    MapSample a = sphere(ray, vec3(1.0f, 0.0f, 0.0f), 1.0f, 1);
+    a = join(a, sphere(ray, vec3(-1.0f, 0.0f, 0.0f), 1.0f, 2));
     a = join(a, box(ray,
-        vec3(0.0f, -3.0f, 0.0f),
-        vec3(1.0f),
-        3));
-    a = join(a, box(ray,
-        vec3(0.0f, 4.0f, 0.0f),
-        vec3(2.0f, 0.1f, 2.0f),
+        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.5f),
         4));
+    a = join(a, box(ray, // light
+        vec3(0.0f, 4.0f, 0.0f),
+        vec3(2.0f, 0.2f, 2.0f),
+        3));
     a = join(a, box(ray, // left wall
         vec3(-4.0f, 0.0f, 0.0f),
         vec3(0.01f, 4.0f, 4.0f),
-        0));
+        1));
     a = join(a, box(ray, // right wall
         vec3(4.0f, 0.0f, 0.0f),
         vec3(0.01f, 4.0f, 4.0f),
-        0));
+        2));
     a = join(a, box(ray, // ceiling
         vec3(0.0f, 4.0f, 0.0f),
         vec3(4.0f, 0.01f, 4.0f),
@@ -110,7 +118,7 @@ MapSample map(vec3 ray){
     a = join(a, box(ray, // floor
         vec3(0.0f, -4.0f, 0.0f),
         vec3(4.0f, 0.01f, 4.0f),
-        0));
+        3));
     a = join(a, box(ray, // back
         vec3(0.0f, 0.0f, -4.0f),
         vec3(4.0f, 4.0f, 0.01f),
@@ -135,13 +143,16 @@ vec3 trace(vec3 rd, vec3 eye){
     float e = 0.0001;
 	vec3 col = vec3(0.0, 0.0, 0.0);
     vec3 mask = vec3(1.0, 1.0, 1.0);
-    uint s = uint(1024.0 * dot(seed.xy, gl_GlobalInvocationID.xy));
+    uint s = uint(65535.0 * dot(seed.xy, gl_GlobalInvocationID.xy));
     
-    for(int i = 0; i < 10; i++){    // bounces
+    int depth = 4 + int(SAMPLES) / 200;
+    depth = min(depth, 20);
+    
+    for(int i = 0; i < depth; i++){    // bounces
         MapSample sam;
         bool hit = false;
         
-        for(int j = 0; j < 100; j++){ // steps
+        for(int j = 0; j < depth * 15; j++){ // steps
             sam = map(eye);
             if(abs(sam.distance) < e){
                 hit = true;
@@ -159,7 +170,7 @@ vec3 trace(vec3 rd, vec3 eye){
         col += mask * materials[sam.matid].emittance.rgb;
         mask *= 2.0 * materials[sam.matid].reflectance.rgb * dot(N, rd);
         
-        if((mask.x + mask.y + mask.z) <= 0.0)
+        if((mask.x + mask.y + mask.z) <= 0.001)
             break;
     }
     
@@ -175,7 +186,6 @@ void main(){
 	vec3 rd = normalize(toWorld(uv.x, uv.y, 1.0) - EYE);
     
 	vec3 col = trace(rd, EYE); // trace a new ray
-    col = pow(col, vec3(1.0 / 2.2));
     
     float a = 1.0 / SAMPLES;
     float b = 1.0 - a;
