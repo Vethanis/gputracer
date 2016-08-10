@@ -1,1 +1,1 @@
-octree.exe 1280 720
+main.exe 1280 720
