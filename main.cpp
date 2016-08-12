@@ -82,10 +82,14 @@ char* copy_file(const char* filename){
     return fbuf;
 }
 
+inline float sum(const vec3& v){
+    return v.x + v.y + v.z;
+}
+
 int main(int argc, char* argv[]){
     srand(time(NULL));
     int WIDTH = 1280, HEIGHT = 720;
-	if(argc != 3){
+	if(argc == 3){
         WIDTH = atoi(argv[1]);
         HEIGHT = atoi(argv[2]);
 	}
@@ -108,7 +112,7 @@ int main(int argc, char* argv[]){
 	const unsigned callsizeX = WIDTH / layoutSize + ((WIDTH % layoutSize) ? 1 : 0);
 	const unsigned callsizeY = HEIGHT / layoutSize + ((HEIGHT % layoutSize) ? 1 : 0);
 	
-	Window window(WIDTH, HEIGHT, 4, 3, "Meshing");
+	Window window(WIDTH, HEIGHT, 4, 3, "gputracer");
 	Input input(window.getWindow());
 	
 	GLProgram color("vert.glsl", "frag.glsl");
@@ -132,8 +136,12 @@ int main(int argc, char* argv[]){
     float irm = 1.0f / RAND_MAX;
     float t = (float)glfwGetTime();
     while(window.open()){
+        vec3 eye = camera.getEye();
+        vec3 at = camera.getAt();
         input.poll(frameBegin(i, t), camera);
-        if(input.leftMouseDown())
+        eye -= camera.getEye();
+        at -= camera.getAt();
+        if(sum(eye) != 0.0f || sum(at) != 0.0f)
             frame = 1;
         
         uni.IVP = camera.getIVP();
@@ -150,7 +158,7 @@ int main(int argc, char* argv[]){
 		screen.draw();
 		
         window.swap();
-        frame = MIN(frame + 1.0f, 100000.0f);
+        frame = MIN(frame + 1.0f, 10000.0f);
     }
 
     return 0;
