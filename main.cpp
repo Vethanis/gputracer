@@ -142,7 +142,7 @@ int main(int argc, char* argv[]){
         eye -= camera.getEye();
         at -= camera.getAt();
         if(sum(eye) != 0.0f || sum(at) != 0.0f)
-            frame = 1;
+            frame = 5;
         
         uni.IVP = camera.getIVP();
         uni.eye = vec4(camera.getEye(), 1.0f);

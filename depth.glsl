@@ -57,9 +57,8 @@ vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
         dir.y = rand(s);
         dir.z = rand(s);
         i++;
-        dir = normalize(dir + N);
-    }while(dot(dir, N) < 0.01 && i < 20);
-    return normalize(mix(ref, dir, roughness));
+    }while(dot(dir, N) <= 0.0 && i < 20);
+    return normalize(mix(ref, normalize(dir), roughness));
 }
 
 float vmax(vec3 a){
@@ -93,19 +92,43 @@ vec3 tri(vec3 r, float d){
     );
 }
 
+/*
+ 0: white
+ 1: mirror
+ 2: blue
+ 3: red
+ 4: light
+*/
+
 MapSample map(vec3 ray){
     MapSample a = sphere(ray, // light sphere
-        vec3(2.0f, -3.0f, 2.0f),
+        vec3(0.0f, -1.0f, 3.0f),
         1.0f,
         4);
     a = join(a, sphere(ray, // chrome sphere
-        vec3(-2.0f, -3.0f, -2.0f),
+        vec3(0.0f, -3.0f, 0.0f),
         1.0f,
         1));
-    a = join(a, box(ray, // green box
-        vec3(1.0f, -3.5f, 1.0f),
-        vec3(0.5f),
+    a = join(a, sphere(ray, // blue sphere
+        vec3(-0.5f, -3.5f, 3.0f),
+        0.5f,
         2));
+    a = join(a, sphere(ray, // red sphere
+        vec3(0.5f, -3.5f, 3.0f),
+        0.5f,
+        3));
+    a = join(a, box(ray, // box above spheres
+        vec3(0.0f, -2.5f, 3.0f),
+        vec3(1.2f, 0.1f, 1.0f),
+        0));
+    a = join(a, box(ray, // box left of spheres
+        vec3(-1.2f, -3.5f, 3.0f),
+        vec3(0.1f, 1.0f, 1.0f),
+        0));
+    a = join(a, box(ray, // box right of spheres
+        vec3(1.2f, -3.5f, 3.0f),
+        vec3(0.1f, 1.0f, 1.0f),
+        0));
     a = join(a, box(ray, // left wall
         vec3(-4.0f, 0.0f, 0.0f),
         vec3(0.01f, 4.0f, 4.0f),
@@ -113,7 +136,7 @@ MapSample map(vec3 ray){
     a = join(a, box(ray, // right wall
         vec3(4.0f, 0.0f, 0.0f),
         vec3(0.01f, 4.0f, 4.0f),
-        3));
+        0));
     a = join(a, box(ray, // ceiling
         vec3(0.0f, 4.0f, 0.0f),
         vec3(4.0f, 0.01f, 4.0f),
@@ -148,7 +171,7 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
     vec3 mask = vec3(1.0, 1.0, 1.0);
 
     int depth = 3 + int( SAMPLES * 0.005);
-    depth = min(depth, 10);
+    depth = min(depth, 8);
     
     for(int i = 0; i < depth; i++){    // bounces
         MapSample sam;
