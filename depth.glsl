@@ -40,17 +40,13 @@ struct MapSample{
     int matid;
 };
 
-float rand1( inout uint f) {
+float rand( inout uint f) {
     f = (f ^ 61) ^ (f >> 16);
     f *= 9;
     f = f ^ (f >> 4);
     f *= 0x27d4eb2d;
     f = f ^ (f >> 15);
     return fract(float(f) * 0.00000001) * 2.0 - 1.0;
-}
-
-float rand(inout uint f){
-    return 0.5f * (rand1(f) - rand1(f));
 }
 
 vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
@@ -61,8 +57,9 @@ vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
         dir.y = rand(s);
         dir.z = rand(s);
         i++;
-    }while(dot(dir, N) < 0.01f && i < 20);
-    return normalize(mix(ref, normalize(dir), roughness));
+        dir = normalize(dir + N);
+    }while(dot(dir, N) < 0.01 && i < 20);
+    return normalize(mix(ref, dir, roughness));
 }
 
 float vmax(vec3 a){
@@ -150,7 +147,7 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
 	vec3 col = vec3(0.0, 0.0, 0.0);
     vec3 mask = vec3(1.0, 1.0, 1.0);
 
-    int depth = 3 + int( SAMPLES * 0.002);
+    int depth = 3 + int( SAMPLES * 0.005);
     depth = min(depth, 10);
     
     for(int i = 0; i < depth; i++){    // bounces
@@ -188,7 +185,7 @@ void main(){
 	if (pix.x >= size.x || pix.y >= size.y) return;
     
     uint s = uint(seed.z + 10000.0 * dot(seed.xy, gl_GlobalInvocationID.xy));
-    vec2 aa = vec2(rand(s), rand(s)) * 0.9;
+    vec2 aa = vec2(rand(s), rand(s)) * 0.5;
 	vec2 uv = (vec2(pix + aa) / vec2(size))* 2.0 - 1.0;
 	vec3 rd = normalize(toWorld(uv.x, uv.y, 1.0) - EYE);
     
