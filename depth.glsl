@@ -40,13 +40,17 @@ struct MapSample{
     int matid;
 };
 
-float rand( inout uint f) {
+float rand1( inout uint f) {
     f = (f ^ 61) ^ (f >> 16);
     f *= 9;
     f = f ^ (f >> 4);
     f *= 0x27d4eb2d;
     f = f ^ (f >> 15);
     return fract(float(f) * 0.00000001) * 2.0 - 1.0;
+}
+
+float rand(inout uint f){
+    return 0.5f * (rand1(f) - rand1(f));
 }
 
 vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
@@ -141,17 +145,19 @@ vec3 map_normal(vec3 point){
     ));
 }
 
-vec3 trace(vec3 rd, vec3 eye){
+vec3 trace(vec3 rd, vec3 eye, inout uint s){
     float e = 0.0001;
 	vec3 col = vec3(0.0, 0.0, 0.0);
     vec3 mask = vec3(1.0, 1.0, 1.0);
-    uint s = uint(seed.z + 10000.0 * dot(seed.xy, gl_GlobalInvocationID.xy));
 
-    for(int i = 0; i < 7; i++){    // bounces
+    int depth = 3 + int( SAMPLES * 0.002);
+    depth = min(depth, 10);
+    
+    for(int i = 0; i < depth; i++){    // bounces
         MapSample sam;
         bool hit = false;
         
-        for(int j = 0; j < 150; j++){ // steps
+        for(int j = 0; j < 200; j++){ // steps
             sam = map(eye);
             if(abs(sam.distance) < e){
                 hit = true;
@@ -180,16 +186,17 @@ void main(){
 	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);  
 	ivec2 size = imageSize(color);
 	if (pix.x >= size.x || pix.y >= size.y) return;
-
-	vec2 uv = (vec2(pix) / vec2(size))* 2.0 - 1.0;
+    
+    uint s = uint(seed.z + 10000.0 * dot(seed.xy, gl_GlobalInvocationID.xy));
+    vec2 aa = vec2(rand(s), rand(s)) * 0.9;
+	vec2 uv = (vec2(pix + aa) / vec2(size))* 2.0 - 1.0;
 	vec3 rd = normalize(toWorld(uv.x, uv.y, 1.0) - EYE);
     
-	vec3 col = trace(rd, EYE); // trace a new ray
+	vec3 col = trace(rd, EYE, s);
+    vec3 oldcol = imageLoad(color, pix).rgb;
     
     float a = 1.0 / SAMPLES;
     float b = 1.0 - a;
-    
-    vec3 oldcol = imageLoad(color, pix).rgb;
     
     col = a * col + b * oldcol;
     
