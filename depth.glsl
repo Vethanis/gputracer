@@ -24,7 +24,7 @@ struct Material{
 };
 
 layout(binding=3) buffer SDF_BUF{   
-    Material materials[5];
+    Material materials[16];
 };
 
 #define ROUGHNESS(i) materials[(i)].emittance.w

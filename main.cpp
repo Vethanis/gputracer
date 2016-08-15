@@ -14,23 +14,23 @@
 #include "time.h"
 #include <random>
 #include "string.h"
+#include <fstream>
 
 using namespace std;
-using namespace glm;
 
 struct Uniforms{
-    mat4 IVP;
-    vec4 eye;
-    vec4 nfwh;
-    vec4 seed;
+    glm::mat4 IVP;
+    glm::vec4 eye;
+    glm::vec4 nfwh;
+    glm::vec4 seed;
 };
 
 struct Material{
-    vec4 reflectance, emittance;
+    glm::vec4 reflectance, emittance;
 };
 
 struct SDF_BUF{
-    Material materials[5];
+    Material materials[16];
 };
 
 float frameBegin(unsigned& i, float& t){
@@ -47,42 +47,21 @@ float frameBegin(unsigned& i, float& t){
     return dt;
 }
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-char* nextline(char* p){
-    while(*p != EOF && *p != '\n')
-        p++;
-    if(*p != EOF)
-        p++;
-    return p;
-}
-
-void read_map(char* p, float* buf){
-    int mats = atoi(p);
-    p = nextline(p);
-    Material mat;
-    for(int i = 0; i < mats; i++){
-        for(int j = 0; j < 8; j++, buf++){
-            *buf = (float)atof(p);
-            p = nextline(p);
-        }
-    }
-}
-
-char* copy_file(const char* filename){
-    FILE* file = fopen(filename, "rb");
-    if(!file) return nullptr;
+bool read_map(float* buf, int len, const char* filename){
+    ifstream fs(filename);
+    if(!fs.is_open())return false;
     
-    size_t filesize;
-    fseek(file, 0, SEEK_END);
-    filesize = ftell(file);
-    rewind(file);
-    char* fbuf = (char*)malloc(filesize);
-    fread(fbuf, 1, filesize, file);
-    fclose(file);
-    return fbuf;
+    for(int i = 0; i < len && fs.good(); i++){
+        fs >> buf[i];
+    }
+    
+    fs.close();
+    return true;
 }
 
-inline float sum(const vec3& v){
+inline float sum(const glm::vec3& v){
     return v.x + v.y + v.z;
 }
 
@@ -95,17 +74,14 @@ int main(int argc, char* argv[]){
     }
     
     SDF_BUF sdf_buf;
-    char* fbuf = copy_file("map.txt");
-    if(!fbuf){
-        puts("Cannot open map.txt");
+    if(!read_map((float*)&sdf_buf.materials, 8 * 16, "map.txt")){
+        puts("Could not open map.txt");
         return 1;
     }
-    read_map(fbuf, (float*)&sdf_buf);
-    free(fbuf);
     
     Camera camera;
     camera.resize(WIDTH, HEIGHT);
-    camera.setEye(vec3(0.0f, 0.0f, 1.9f));
+    camera.setEye(glm::vec3(0.0f, 0.0f, 1.9f));
     camera.update();
     
     const unsigned layoutSize = 8;
@@ -124,8 +100,8 @@ int main(int argc, char* argv[]){
     
     Uniforms uni;
     uni.IVP = camera.getIVP();
-    uni.eye = vec4(camera.getEye(), 1.0f);
-    uni.nfwh = vec4(camera.getNear(), camera.getFar(), (float)WIDTH, (float)HEIGHT);
+    uni.eye = glm::vec4(camera.getEye(), 1.0f);
+    uni.nfwh = glm::vec4(camera.getNear(), camera.getFar(), (float)WIDTH, (float)HEIGHT);
     UBO unibuf(&uni, sizeof(uni), 2);
     
     SSBO sdfbuf(&sdf_buf, sizeof(sdf_buf), 3);
@@ -136,8 +112,8 @@ int main(int argc, char* argv[]){
     float irm = 1.0f / RAND_MAX;
     float t = (float)glfwGetTime();
     while(window.open()){
-        vec3 eye = camera.getEye();
-        vec3 at = camera.getAt();
+        glm::vec3 eye = camera.getEye();
+        glm::vec3 at = camera.getAt();
         input.poll(frameBegin(i, t), camera);
         eye -= camera.getEye();
         at -= camera.getAt();
@@ -145,8 +121,8 @@ int main(int argc, char* argv[]){
             frame = 5;
         
         uni.IVP = camera.getIVP();
-        uni.eye = vec4(camera.getEye(), 1.0f);
-        uni.seed = vec4(rand() * irm, rand() * irm, rand() * irm, frame);
+        uni.eye = glm::vec4(camera.getEye(), 1.0f);
+        uni.seed = glm::vec4(rand() * irm, rand() * irm, rand() * irm, frame);
         unibuf.upload(&uni, sizeof(uni));
         
         depth.bind();

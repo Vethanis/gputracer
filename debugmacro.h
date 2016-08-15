@@ -1,6 +1,8 @@
 #ifndef DEBUGMACRO_H
 #define DEBUGMACRO_H
 
+#define DEBUG
+
 #ifdef DEBUG
 
 #include "myglheaders.h"
