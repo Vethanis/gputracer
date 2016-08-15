@@ -7,50 +7,50 @@
 #include "glprogram.h"
 
 
-template<typename T, int FullType, int Channels, int ComponentType>	
-struct Texture{	
-	int width, height;
-	unsigned handle;
-	Texture(int w, int h, bool mip=false) : width(w), height(h){	
-		glGenTextures(1, &handle);	
-		glBindTexture(GL_TEXTURE_2D, handle);	
-		if(mip){	
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	MYGLERRORMACRO	
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);	MYGLERRORMACRO	
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);	MYGLERRORMACRO	
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	MYGLERRORMACRO	
-		}	
-		else{	
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	MYGLERRORMACRO	
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);	MYGLERRORMACRO	
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);	MYGLERRORMACRO	
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);	MYGLERRORMACRO	
-		}	
-		glTexImage2D(GL_TEXTURE_2D, 0, FullType, width, height, 0, Channels, ComponentType, NULL);	MYGLERRORMACRO	
-		if(mip)	
-			glGenerateMipmap(GL_TEXTURE_2D);	MYGLERRORMACRO	
-	
-		glBindTexture(GL_TEXTURE_2D, 0);	
-		MYGLERRORMACRO	
-	}	
-	~Texture(){	
-		glDeleteTextures(1, &handle);	MYGLERRORMACRO	
-	}	
-	void bind(int channel, const char* uname, GLProgram& prog){	
-		glActiveTexture(GL_TEXTURE0 + channel);	
-		MYGLERRORMACRO	
-		glBindTexture(GL_TEXTURE_2D, handle);	
-		MYGLERRORMACRO	
-		prog.setUniformInt(uname, channel);	
-	}	
-	void setCSBinding(int binding){	
-		glBindImageTexture(0, handle, 0, GL_FALSE, 0, GL_READ_WRITE, FullType);	
-		MYGLERRORMACRO	
-	}	
-	void setPixel(glm::ivec2 cr, const void* p){	
-		glTextureSubImage2D(handle, 0, cr.x, cr.y, 1, 1, Channels, ComponentType, p);	
-		MYGLERRORMACRO	
-	}	
+template<typename T, int FullType, int Channels, int ComponentType>    
+struct Texture{    
+    int width, height;
+    unsigned handle;
+    Texture(int w, int h, bool mip=false) : width(w), height(h){    
+        glGenTextures(1, &handle);    
+        glBindTexture(GL_TEXTURE_2D, handle);    
+        if(mip){    
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);    MYGLERRORMACRO    
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);    MYGLERRORMACRO    
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);    MYGLERRORMACRO    
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);    MYGLERRORMACRO    
+        }    
+        else{    
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);    MYGLERRORMACRO    
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);    MYGLERRORMACRO    
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);    MYGLERRORMACRO    
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);    MYGLERRORMACRO    
+        }    
+        glTexImage2D(GL_TEXTURE_2D, 0, FullType, width, height, 0, Channels, ComponentType, NULL);    MYGLERRORMACRO    
+        if(mip)    
+            glGenerateMipmap(GL_TEXTURE_2D);    MYGLERRORMACRO    
+    
+        glBindTexture(GL_TEXTURE_2D, 0);    
+        MYGLERRORMACRO    
+    }    
+    ~Texture(){    
+        glDeleteTextures(1, &handle);    MYGLERRORMACRO    
+    }    
+    void bind(int channel, const char* uname, GLProgram& prog){    
+        glActiveTexture(GL_TEXTURE0 + channel);    
+        MYGLERRORMACRO    
+        glBindTexture(GL_TEXTURE_2D, handle);    
+        MYGLERRORMACRO    
+        prog.setUniformInt(uname, channel);    
+    }    
+    void setCSBinding(int binding){    
+        glBindImageTexture(0, handle, 0, GL_FALSE, 0, GL_READ_WRITE, FullType);    
+        MYGLERRORMACRO    
+    }    
+    void setPixel(glm::ivec2 cr, const void* p){    
+        glTextureSubImage2D(handle, 0, cr.x, cr.y, 1, 1, Channels, ComponentType, p);    
+        MYGLERRORMACRO    
+    }    
 };
 
 typedef Texture<float, GL_R32F, GL_RED, GL_FLOAT> Texture1f;

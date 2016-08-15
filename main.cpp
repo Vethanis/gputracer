@@ -19,9 +19,9 @@ using namespace std;
 using namespace glm;
 
 struct Uniforms{
-	mat4 IVP;
-	vec4 eye;
-	vec4 nfwh;
+    mat4 IVP;
+    vec4 eye;
+    vec4 nfwh;
     vec4 seed;
 };
 
@@ -38,7 +38,7 @@ float frameBegin(unsigned& i, float& t){
     t += dt;
     i++;
     if(t >= 3.0f){
-    	float ms = (t / i) * 1000.0f;
+        float ms = (t / i) * 1000.0f;
         printf("ms: %.6f, FPS: %.3f\n", ms, i / t);
         i = 0;
         t = 0.0f;
@@ -71,7 +71,7 @@ void read_map(char* p, float* buf){
 char* copy_file(const char* filename){
     FILE* file = fopen(filename, "rb");
     if(!file) return nullptr;
-	
+    
     size_t filesize;
     fseek(file, 0, SEEK_END);
     filesize = ftell(file);
@@ -89,12 +89,12 @@ inline float sum(const vec3& v){
 int main(int argc, char* argv[]){
     srand(time(NULL));
     int WIDTH = 1280, HEIGHT = 720;
-	if(argc == 3){
+    if(argc == 3){
         WIDTH = atoi(argv[1]);
         HEIGHT = atoi(argv[2]);
-	}
+    }
     
-	SDF_BUF sdf_buf;
+    SDF_BUF sdf_buf;
     char* fbuf = copy_file("map.txt");
     if(!fbuf){
         puts("Cannot open map.txt");
@@ -103,34 +103,34 @@ int main(int argc, char* argv[]){
     read_map(fbuf, (float*)&sdf_buf);
     free(fbuf);
     
-	Camera camera;
-	camera.resize(WIDTH, HEIGHT);
-	camera.setEye(vec3(0.0f, 0.0f, 1.9f));
-	camera.update();
-	
-	const unsigned layoutSize = 8;
-	const unsigned callsizeX = WIDTH / layoutSize + ((WIDTH % layoutSize) ? 1 : 0);
-	const unsigned callsizeY = HEIGHT / layoutSize + ((HEIGHT % layoutSize) ? 1 : 0);
-	
-	Window window(WIDTH, HEIGHT, 4, 3, "gputracer");
-	Input input(window.getWindow());
-	
-	GLProgram color("vert.glsl", "frag.glsl");
-	ComputeShader depth("depth.glsl");
-	Texture4f colTex(WIDTH, HEIGHT);
-	colTex.setCSBinding(0);
-	GLScreen screen;
-	Timer timer;
-	
-	Uniforms uni;
-	uni.IVP = camera.getIVP();
-	uni.eye = vec4(camera.getEye(), 1.0f);
-	uni.nfwh = vec4(camera.getNear(), camera.getFar(), (float)WIDTH, (float)HEIGHT);
-	UBO unibuf(&uni, sizeof(uni), 2);
+    Camera camera;
+    camera.resize(WIDTH, HEIGHT);
+    camera.setEye(vec3(0.0f, 0.0f, 1.9f));
+    camera.update();
     
-	SSBO sdfbuf(&sdf_buf, sizeof(sdf_buf), 3);
-	
-	input.poll();
+    const unsigned layoutSize = 8;
+    const unsigned callsizeX = WIDTH / layoutSize + ((WIDTH % layoutSize) ? 1 : 0);
+    const unsigned callsizeY = HEIGHT / layoutSize + ((HEIGHT % layoutSize) ? 1 : 0);
+    
+    Window window(WIDTH, HEIGHT, 4, 3, "gputracer");
+    Input input(window.getWindow());
+    
+    GLProgram color("vert.glsl", "frag.glsl");
+    ComputeShader depth("depth.glsl");
+    Texture4f colTex(WIDTH, HEIGHT);
+    colTex.setCSBinding(0);
+    GLScreen screen;
+    Timer timer;
+    
+    Uniforms uni;
+    uni.IVP = camera.getIVP();
+    uni.eye = vec4(camera.getEye(), 1.0f);
+    uni.nfwh = vec4(camera.getNear(), camera.getFar(), (float)WIDTH, (float)HEIGHT);
+    UBO unibuf(&uni, sizeof(uni), 2);
+    
+    SSBO sdfbuf(&sdf_buf, sizeof(sdf_buf), 3);
+    
+    input.poll();
     unsigned i = 0;
     float frame = 1.0f;
     float irm = 1.0f / RAND_MAX;
@@ -149,14 +149,14 @@ int main(int argc, char* argv[]){
         uni.seed = vec4(rand() * irm, rand() * irm, rand() * irm, frame);
         unibuf.upload(&uni, sizeof(uni));
         
-		depth.bind();
-		depth.call(callsizeX, callsizeY, 1);
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-		
-		color.bind();
-		colTex.bind(0, "color", color);
-		screen.draw();
-		
+        depth.bind();
+        depth.call(callsizeX, callsizeY, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        
+        color.bind();
+        colTex.bind(0, "color", color);
+        screen.draw();
+        
         window.swap();
         frame = MIN(frame + 1.0f, 10000.0f);
     }

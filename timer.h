@@ -2,14 +2,13 @@
 #define TIMER_H
 
 class Timer{
-	unsigned id;
-	int nanoseconds;
+    unsigned id;
 public:
-	Timer();
-	~Timer();
-	void begin();
-	int end();
-	void endPrint();
+    Timer();
+    ~Timer();
+    void begin();
+    int end();
+    void endPrint();
 };
 
 #endif

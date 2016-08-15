@@ -6,9 +6,9 @@ layout(binding = 0, rgba32f) uniform image2D color;
 
 layout(binding=2) uniform CAM_BUF
 {
-	mat4 IVP;
-	vec4 eye;
-	vec4 nfwh;
+    mat4 IVP;
+    vec4 eye;
+    vec4 nfwh;
     vec4 seed;
 };
 
@@ -30,9 +30,9 @@ layout(binding=3) buffer SDF_BUF{
 #define ROUGHNESS(i) materials[(i)].emittance.w
 
 vec3 toWorld(float x, float y, float z){
-	vec4 t = vec4(x, y, z, 1.0);
-	t = IVP * t;
-	return vec3(t/t.w);
+    vec4 t = vec4(x, y, z, 1.0);
+    t = IVP * t;
+    return vec3(t/t.w);
 }
 
 struct MapSample{
@@ -119,7 +119,7 @@ MapSample map(vec3 ray){
         3));
     a = join(a, box(ray, // box above spheres
         vec3(0.0f, -2.5f, 3.0f),
-        vec3(1.2f, 0.1f, 1.0f),
+        vec3(1.3f, 0.1f, 1.0f),
         0));
     a = join(a, box(ray, // box left of spheres
         vec3(-1.2f, -3.5f, 3.0f),
@@ -167,7 +167,7 @@ vec3 map_normal(vec3 point){
 
 vec3 trace(vec3 rd, vec3 eye, inout uint s){
     float e = 0.0001;
-	vec3 col = vec3(0.0, 0.0, 0.0);
+    vec3 col = vec3(0.0, 0.0, 0.0);
     vec3 mask = vec3(1.0, 1.0, 1.0);
 
     int depth = 3 + int( SAMPLES * 0.005);
@@ -203,16 +203,16 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
 }
 
 void main(){
-	ivec2 pix = ivec2(gl_GlobalInvocationID.xy);  
-	ivec2 size = imageSize(color);
-	if (pix.x >= size.x || pix.y >= size.y) return;
+    ivec2 pix = ivec2(gl_GlobalInvocationID.xy);  
+    ivec2 size = imageSize(color);
+    if (pix.x >= size.x || pix.y >= size.y) return;
     
     uint s = uint(seed.z + 10000.0 * dot(seed.xy, gl_GlobalInvocationID.xy));
     vec2 aa = vec2(rand(s), rand(s)) * 0.5;
-	vec2 uv = (vec2(pix + aa) / vec2(size))* 2.0 - 1.0;
-	vec3 rd = normalize(toWorld(uv.x, uv.y, 1.0) - EYE);
+    vec2 uv = (vec2(pix + aa) / vec2(size))* 2.0 - 1.0;
+    vec3 rd = normalize(toWorld(uv.x, uv.y, 1.0) - EYE);
     
-	vec3 col = trace(rd, EYE, s);
+    vec3 col = trace(rd, EYE, s);
     vec3 oldcol = imageLoad(color, pix).rgb;
     
     float a = 1.0 / SAMPLES;
@@ -220,6 +220,6 @@ void main(){
     
     col = a * col + b * oldcol;
     
-	imageStore(color, pix, vec4(col, 1.0));
+    imageStore(color, pix, vec4(col, 1.0));
 }
 
