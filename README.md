@@ -13,4 +13,4 @@ __Dependencies:__
 * glew
 * glfw3
 * glm
-* clang or visual studio 2015
+* C++11 compiler
