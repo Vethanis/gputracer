@@ -166,27 +166,22 @@ vec3 map_normal(vec3 point){
 }
 
 vec3 trace(vec3 rd, vec3 eye, inout uint s){
-    float e = 0.0001;
+    float e = 0.001;
     vec3 col = vec3(0.0, 0.0, 0.0);
     vec3 mask = vec3(1.0, 1.0, 1.0);
 
-    int depth = 3 + int( SAMPLES * 0.005);
-    depth = min(depth, 8);
+    int depth = 4;
     
     for(int i = 0; i < depth; i++){    // bounces
         MapSample sam;
-        bool hit = false;
         
-        for(int j = 0; j < 200; j++){ // steps
+        for(int j = 0; j < 30; j++){ // steps
             sam = map(eye);
             if(abs(sam.distance) < e){
-                hit = true;
                 break;
             }
             eye = eye + rd * abs(sam.distance);
         }
-        
-        if(!hit)break;
         
         vec3 N = map_normal(eye);
         rd = randomDir(N, rd, ROUGHNESS(sam.matid), s);
