@@ -57,7 +57,7 @@ vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
         dir.y = rand(s);
         dir.z = rand(s);
         i++;
-    }while(dot(dir, N) <= 0.0 && i < 20);
+    }while(dot(dir, N) <= 0.0 && i < 60);
     return normalize(mix(ref, normalize(dir), roughness));
 }
 
@@ -203,7 +203,7 @@ void main(){
     uint s = uint(seed.z + 10000.0 * dot(seed.xy, gl_GlobalInvocationID.xy));
     vec2 aa = vec2(rand(s), rand(s)) * 0.5;
     vec2 uv = (vec2(pix + aa) / vec2(size))* 2.0 - 1.0;
-    vec3 rd = normalize(toWorld(uv.x, uv.y, 1.0) - EYE);
+    vec3 rd = normalize(toWorld(uv.x, uv.y, 0.0) - EYE);
     
     vec3 col = trace(rd, EYE, s);
     vec3 oldcol = imageLoad(color, pix).rgb;
