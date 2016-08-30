@@ -101,58 +101,66 @@ vec3 tri(vec3 r, float d){
 */
 
 MapSample map(vec3 ray){
-    MapSample a = sphere(ray, // light sphere
-        vec3(0.0f, -1.0f, 3.0f),
+    MapSample a = sphere(ray, // white light
+        vec3(4.0f, 4.0f, 4.0f),
         1.0f,
-        4);
-    a = join(a, sphere(ray, // chrome sphere
-        vec3(0.0f, -3.0f, 0.0f),
+        0);
+    a = join(a, sphere(ray, // light
+        vec3(-4.0f, 4.0f, 4.0f),
         1.0f,
         1));
-    a = join(a, sphere(ray, // blue sphere
-        vec3(-0.5f, -3.5f, 3.0f),
-        0.5f,
+    a = join(a, sphere(ray, // light
+        vec3(-4.0f, 4.0f, -4.0f),
+        1.0f,
         2));
-    a = join(a, sphere(ray, // red sphere
-        vec3(0.5f, -3.5f, 3.0f),
-        0.5f,
+    a = join(a, sphere(ray, // light
+        vec3(4.0f, 4.0f, -4.0f),
+        1.0f,
         3));
-    a = join(a, box(ray, // box above spheres
-        vec3(0.0f, -2.5f, 3.0f),
-        vec3(1.3f, 0.1f, 1.0f),
-        0));
-    a = join(a, box(ray, // box left of spheres
-        vec3(-1.2f, -3.5f, 3.0f),
-        vec3(0.1f, 1.0f, 1.0f),
-        0));
-    a = join(a, box(ray, // box right of spheres
-        vec3(1.2f, -3.5f, 3.0f),
-        vec3(0.1f, 1.0f, 1.0f),
-        0));
-    a = join(a, box(ray, // left wall
+    a = join(a, sphere(ray, // chrome spheres
         vec3(-4.0f, 0.0f, 0.0f),
-        vec3(0.01f, 4.0f, 4.0f),
-        0));
-    a = join(a, box(ray, // right wall
+        1.0f,
+        8));
+    a = join(a, sphere(ray, // chrome spheres
+        vec3(-2.0f, 0.0f, 0.0f),
+        1.0f,
+        7));
+    a = join(a, sphere(ray, // chrome spheres
+        vec3(0.0f, 0.0f, 0.0f),
+        1.0f,
+        6));
+    a = join(a, sphere(ray, // chrome spheres
+        vec3(2.0f, 0.0f, 0.0f),
+        1.0f,
+        5));
+    a = join(a, sphere(ray, // chrome spheres
         vec3(4.0f, 0.0f, 0.0f),
-        vec3(0.01f, 4.0f, 4.0f),
-        0));
+        1.0f,
+        4));
+    a = join(a, box(ray, // left wall
+        vec3(-5.0f, 0.0f, 0.0f),
+        vec3(0.01f, 100.0f, 100.0f),
+        9));
+    a = join(a, box(ray, // right wall
+        vec3(5.0f, 0.0f, 0.0f),
+        vec3(0.01f, 100.0f, 100.0f),
+        10));
     a = join(a, box(ray, // ceiling
-        vec3(0.0f, 4.0f, 0.0f),
-        vec3(4.0f, 0.01f, 4.0f),
-        0));
+        vec3(0.0f, 5.0f, 0.0f),
+        vec3(100.0f, 0.01f, 100.0f),
+        11));
     a = join(a, box(ray, // floor
-        vec3(0.0f, -4.0f, 0.0f),
-        vec3(4.0f, 0.01f, 4.0f),
-        0));
+        vec3(0.0f, -5.0f, 0.0f),
+        vec3(100.0f, 0.01f, 100.0f),
+        12));
     a = join(a, box(ray, // back
-        vec3(0.0f, 0.0f, -4.0f),
-        vec3(4.0f, 4.0f, 0.01f),
-        0));
+        vec3(0.0f, 0.0f, -5.0f),
+        vec3(100.0f, 100.0f, 0.01f),
+        13));
     a = join(a, box(ray, // front
-        vec3(0.0f, 0.0f, 4.0f),
-        vec3(4.0f, 4.0f, 0.01f),
-        0));
+        vec3(0.0f, 0.0f, 20.0f),
+        vec3(100.0f, 100.0f, 0.01f),
+        14));
     return a;
 }
 
@@ -170,10 +178,10 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
     vec3 col = vec3(0.0, 0.0, 0.0);
     vec3 mask = vec3(1.0, 1.0, 1.0);
     
-    for(int i = 0; i < 4; i++){    // bounces
+    for(int i = 0; i < 5; i++){    // bounces
         MapSample sam;
         
-        for(int j = 0; j < 45; j++){ // steps
+        for(int j = 0; j < 60; j++){ // steps
             sam = map(eye);
             if(abs(sam.distance) < e){
                 break;
@@ -188,7 +196,7 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
         col += mask * materials[sam.matid].emittance.rgb;
         mask *= 2.0 * materials[sam.matid].reflectance.rgb * dot(N, rd);
         
-        if((mask.x + mask.y + mask.z) <= 0.0)
+        if((mask.x + mask.y + mask.z) <= 0.01)
             break;
     }
     

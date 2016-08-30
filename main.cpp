@@ -118,7 +118,10 @@ int main(int argc, char* argv[]){
         eye -= camera.getEye();
         at -= camera.getAt();
         if(sum(eye) != 0.0f || sum(at) != 0.0f)
-            frame = 5;
+            frame = 1;
+        
+        if(((int)(frame) & 31) == 31)
+            printf("SPP: %f\n", frame);
         
         uni.IVP = camera.getIVP();
         uni.eye = glm::vec4(camera.getEye(), 1.0f);
