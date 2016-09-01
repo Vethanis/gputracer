@@ -58,7 +58,7 @@ vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
         dir.z = rand(s);
         i++;
     }while(dot(dir, N) <= 0.0 && i < 60);
-    return normalize(mix(ref, normalize(dir), roughness));
+    return normalize(mix(ref, normalize(dir), roughness * roughness));
 }
 
 float vmax(vec3 a){
@@ -72,6 +72,10 @@ MapSample sphere(vec3 ray, vec3 location, float radius, int mat){
 MapSample box(vec3 ray, vec3 location, vec3 dimension, int mat){
     vec3 d = abs(ray - location) - dimension;
     return MapSample(vmax(d), mat);
+}
+
+MapSample plane(vec3 ray, vec3 location, vec3 normal, int mat){
+    return MapSample(dot(ray - location, normal), mat);
 }
 
 MapSample join(MapSample a, MapSample b){
@@ -137,29 +141,29 @@ MapSample map(vec3 ray){
         vec3(4.0f, 0.0f, 0.0f),
         1.0f,
         4));
-    a = join(a, box(ray, // left wall
+    a = join(a, plane(ray, // left wall
         vec3(-5.0f, 0.0f, 0.0f),
-        vec3(0.01f, 100.0f, 100.0f),
+        vec3(1.0f, 0.0f, 0.0f),
         9));
-    a = join(a, box(ray, // right wall
+    a = join(a, plane(ray, // right wall
         vec3(5.0f, 0.0f, 0.0f),
-        vec3(0.01f, 100.0f, 100.0f),
+        vec3(-1.0f, 0.0f, 0.0f),
         10));
-    a = join(a, box(ray, // ceiling
+    a = join(a, plane(ray, // ceiling
         vec3(0.0f, 5.0f, 0.0f),
-        vec3(100.0f, 0.01f, 100.0f),
+        vec3(0.0f, -1.0f, 0.0f),
         11));
-    a = join(a, box(ray, // floor
+    a = join(a, plane(ray, // floor
         vec3(0.0f, -5.0f, 0.0f),
-        vec3(100.0f, 0.01f, 100.0f),
+        vec3(0.0f, 1.0f, 0.0f),
         12));
-    a = join(a, box(ray, // back
+    a = join(a, plane(ray, // back
         vec3(0.0f, 0.0f, -5.0f),
-        vec3(100.0f, 100.0f, 0.01f),
+        vec3(0.0f, 0.0f, 1.0f),
         13));
-    a = join(a, box(ray, // front
+    a = join(a, plane(ray, // front
         vec3(0.0f, 0.0f, 20.0f),
-        vec3(100.0f, 100.0f, 0.01f),
+        vec3(0.0f, 0.0f, -1.0f),
         14));
     return a;
 }
@@ -174,14 +178,14 @@ vec3 map_normal(vec3 point){
 }
 
 vec3 trace(vec3 rd, vec3 eye, inout uint s){
-    float e = 0.001;
+    float e = 0.01;
     vec3 col = vec3(0.0, 0.0, 0.0);
     vec3 mask = vec3(1.0, 1.0, 1.0);
     
-    for(int i = 0; i < 5; i++){    // bounces
+    for(int i = 0; i < 10; i++){    // bounces
         MapSample sam;
         
-        for(int j = 0; j < 60; j++){ // steps
+        for(int j = 0; j < 30; j++){ // steps
             sam = map(eye);
             if(abs(sam.distance) < e){
                 break;
@@ -196,7 +200,7 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
         col += mask * materials[sam.matid].emittance.rgb;
         mask *= 2.0 * materials[sam.matid].reflectance.rgb * dot(N, rd);
         
-        if((mask.x + mask.y + mask.z) <= 0.01)
+        if((mask.x + mask.y + mask.z) < 0.1)
             break;
     }
     
@@ -213,7 +217,7 @@ void main(){
     vec2 uv = (vec2(pix + aa) / vec2(size))* 2.0 - 1.0;
     vec3 rd = normalize(toWorld(uv.x, uv.y, 0.0) - EYE);
     
-    vec3 col = trace(rd, EYE, s);
+    vec3 col = clamp(trace(rd, EYE, s), vec3(0.0), vec3(1.0));
     vec3 oldcol = imageLoad(color, pix).rgb;
     
     float a = 1.0 / SAMPLES;
