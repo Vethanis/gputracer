@@ -57,7 +57,7 @@ vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
         dir.y = rand(s);
         dir.z = rand(s);
         i++;
-    }while(dot(dir, N) <= 0.0 && i < 60);
+    }while(dot(dir, N) <= 0.0 && i < 10);
     return normalize(mix(ref, normalize(dir), roughness * roughness));
 }
 
@@ -162,14 +162,14 @@ MapSample map(vec3 ray){
         vec3(0.0f, 0.0f, 1.0f),
         13));
     a = join(a, plane(ray, // front
-        vec3(0.0f, 0.0f, 20.0f),
+        vec3(0.0f, 0.0f, 10.0f),
         vec3(0.0f, 0.0f, -1.0f),
         14));
     return a;
 }
 
 vec3 map_normal(vec3 point){
-    vec3 e = vec3(0.001, 0.0, 0.0);
+    vec3 e = vec3(0.0001, 0.0, 0.0);
     return normalize(vec3(
         diff(map(point + e.xyz), map(point - e.xyz)),
         diff(map(point + e.zxy), map(point - e.zxy)),
@@ -178,14 +178,14 @@ vec3 map_normal(vec3 point){
 }
 
 vec3 trace(vec3 rd, vec3 eye, inout uint s){
-    float e = 0.01;
+    float e = 0.001;
     vec3 col = vec3(0.0, 0.0, 0.0);
     vec3 mask = vec3(1.0, 1.0, 1.0);
     
-    for(int i = 0; i < 10; i++){    // bounces
+    for(int i = 0; i < 5; i++){    // bounces
         MapSample sam;
         
-        for(int j = 0; j < 30; j++){ // steps
+        for(int j = 0; j < 60; j++){ // steps
             sam = map(eye);
             if(abs(sam.distance) < e){
                 break;
@@ -198,9 +198,9 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
         eye += N * e * 10.0f;
         
         col += mask * materials[sam.matid].emittance.rgb;
-        mask *= 2.0 * materials[sam.matid].reflectance.rgb * dot(N, rd);
+        mask *= 2.0 * materials[sam.matid].reflectance.rgb * abs(dot(N, rd));
         
-        if((mask.x + mask.y + mask.z) < 0.1)
+        if((abs(mask.x) + abs(mask.y) + abs(mask.z)) < e)
             break;
     }
     
