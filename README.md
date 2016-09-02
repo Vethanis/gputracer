@@ -1,6 +1,6 @@
 # gpu path tracer
 
-__[Video](https://www.youtube.com/watch?v=ZpfM_-tjN2s&feature=youtu.be)__
+__[Video](https://www.youtube.com/watch?v=U3DYW4FLjCc&feature=youtu.be)__
 
 __Controls:__
 * mouse movement: look around
