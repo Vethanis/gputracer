@@ -123,7 +123,7 @@ int main(int argc, char* argv[]){
         glm::vec3 at = camera.getAt();
         input.poll(frameBegin(i, t), camera);
         if(absSum(eye - camera.getEye()) != 0.0f || absSum(at - camera.getAt()) != 0.0f)
-            frame = 3;
+            frame = 2;
         
         if(((int)(frame) & 31) == 31)
             printf("SPP: %f\n", frame);

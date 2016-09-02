@@ -232,10 +232,7 @@ void main(){
     vec3 col = clamp(trace(rd, EYE, s), vec3(0.0), vec3(1.0));
     vec3 oldcol = imageLoad(color, pix).rgb;
     
-    float a = 1.0 / SAMPLES;
-    float b = 1.0 - a;
-    
-    col = a * col + b * oldcol;
+    col = mix(oldcol, col, 1.0 / SAMPLES);
     
     imageStore(color, pix, vec4(col, 1.0));
 }
