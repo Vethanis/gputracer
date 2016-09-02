@@ -50,14 +50,10 @@ float rand( inout uint f) {
 }
 
 vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
-    vec3 dir, ref = normalize(reflect(rd, N));
-    int i = 0;
-    do{
-        dir.x = rand(s);
-        dir.y = rand(s);
-        dir.z = rand(s);
-        i++;
-    }while(dot(dir, N) <= 0.0 && i < 10);
+    vec3 ref = normalize(reflect(rd, N));
+    vec3 dir = vec3(rand(s), rand(s), rand(s));
+    if(dot(dir, N) < 0.0)
+        dir *= -1.0;
     return normalize(mix(ref, normalize(dir), roughness * roughness));
 }
 
@@ -152,7 +148,7 @@ MapSample map(vec3 ray){
     a = join(a, plane(ray, // ceiling
         vec3(0.0f, 5.0f, 0.0f),
         vec3(0.0f, -1.0f, 0.0f),
-        11));
+        13));
     a = join(a, plane(ray, // floor
         vec3(0.0f, -5.0f, 0.0f),
         vec3(0.0f, 1.0f, 0.0f),
@@ -160,9 +156,9 @@ MapSample map(vec3 ray){
     a = join(a, plane(ray, // back
         vec3(0.0f, 0.0f, -5.0f),
         vec3(0.0f, 0.0f, 1.0f),
-        13));
+        11));
     a = join(a, plane(ray, // front
-        vec3(0.0f, 0.0f, 10.0f),
+        vec3(0.0f, 0.0f, 11.0f),
         vec3(0.0f, 0.0f, -1.0f),
         14));
     return a;

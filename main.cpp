@@ -61,8 +61,8 @@ bool read_map(float* buf, int len, const char* filename){
     return true;
 }
 
-inline float sum(const glm::vec3& v){
-    return v.x + v.y + v.z;
+inline float absSum(const glm::vec3& v){
+    return fabsf(v.x) + fabsf(v.y) + fabsf(v.z);
 }
 
 int main(int argc, char* argv[]){
@@ -81,7 +81,8 @@ int main(int argc, char* argv[]){
     
     Camera camera;
     camera.resize(WIDTH, HEIGHT);
-    camera.setEye(glm::vec3(0.0f, 0.0f, 1.9f));
+    camera.setEye({-1.0f, 4.0f, 10.0f});
+    camera.lookAt({0.0f, 0.0f, 0.0f});
     camera.update();
     
     const unsigned layoutSize = 8;
@@ -115,10 +116,8 @@ int main(int argc, char* argv[]){
         glm::vec3 eye = camera.getEye();
         glm::vec3 at = camera.getAt();
         input.poll(frameBegin(i, t), camera);
-        eye -= camera.getEye();
-        at -= camera.getAt();
-        if(sum(eye) != 0.0f || sum(at) != 0.0f)
-            frame = 1;
+        if(absSum(eye - camera.getEye()) != 0.0f || absSum(at - camera.getAt()) != 0.0f)
+            frame = 3;
         
         if(((int)(frame) & 31) == 31)
             printf("SPP: %f\n", frame);
