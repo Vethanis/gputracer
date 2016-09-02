@@ -18,6 +18,8 @@
 
 using namespace std;
 
+constexpr size_t NUM_MATERIALS = 32;
+
 struct Uniforms{
     glm::mat4 IVP;
     glm::vec4 eye;
@@ -30,7 +32,7 @@ struct Material{
 };
 
 struct SDF_BUF{
-    Material materials[16];
+    Material materials[NUM_MATERIALS];
 };
 
 float frameBegin(unsigned& i, float& t){
@@ -74,9 +76,13 @@ int main(int argc, char* argv[]){
     }
     
     SDF_BUF sdf_buf;
-    if(!read_map((float*)&sdf_buf.materials, 8 * 16, "map.txt")){
+    if(!read_map((float*)&sdf_buf.materials, sizeof(Material) * NUM_MATERIALS, "map.txt")){
         puts("Could not open map.txt");
         return 1;
+    }
+    // saves thousands of multiplies, nonlinear mix but linear values supplied by artist
+    for(size_t i = 0; i < NUM_MATERIALS; i++){
+        sdf_buf.materials[i].emittance.w *= sdf_buf.materials[i].emittance.w;
     }
     
     Camera camera;

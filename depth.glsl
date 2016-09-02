@@ -46,15 +46,31 @@ float rand( inout uint f) {
     f = f ^ (f >> 4);
     f *= 0x27d4eb2d;
     f = f ^ (f >> 15);
-    return fract(float(f) * 0.00000001) * 2.0 - 1.0;
+    return fract(float(f) * 2.3283064e-10) * 2.0 - 1.0;
+}
+
+float randUni(inout uint f){
+    f = (f ^ 61) ^ (f >> 16);
+    f *= 9;
+    f = f ^ (f >> 4);
+    f *= 0x27d4eb2d;
+    f = f ^ (f >> 15);
+    return fract(float(f) * 2.3283064e-10);
 }
 
 vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
-    vec3 ref = normalize(reflect(rd, N));
-    vec3 dir = vec3(rand(s), rand(s), rand(s));
+    vec3 dir;
+    int i = 0;
+    do{
+        dir = vec3(rand(s), rand(s), rand(s));
+    }while(length(dir) > 1.0 && i < 10);
+    
     if(dot(dir, N) < 0.0)
         dir *= -1.0;
-    return normalize(mix(ref, normalize(dir), roughness * roughness));
+    dir = normalize(dir);
+    vec3 ref = normalize(reflect(rd, N));
+    
+    return normalize(mix(ref, dir, roughness));
 }
 
 float vmax(vec3 a){

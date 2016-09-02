@@ -50,7 +50,9 @@ public:
     inline float getFov()const{return m_fov;}
     inline void setEye(const glm::vec3& eye){m_eye = eye;}
     inline void move(const glm::vec3& v){
-        m_eye += v.x * getRight(V) + v.y * getUp(V) - v.z * getForward(V);
+        auto dv = v.x * getRight(V) + v.y * getUp(V) - v.z * getForward(V);
+        m_eye += dv;
+        m_at += dv;
     }
     void pitch(float amt){
         m_at += amt * getUp(V);
