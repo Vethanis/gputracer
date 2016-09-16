@@ -142,7 +142,7 @@ int main(int argc, char* argv[]){
         screen.draw();
         
         window.swap();
-        frame = MIN(frame + 1.0f, 10000.0f);
+        frame = MIN(frame + 1.0f, 1000000.0f);
     }
 
     return 0;

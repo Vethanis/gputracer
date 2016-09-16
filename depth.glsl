@@ -140,23 +140,23 @@ vec3 tri(vec3 r, float d){
 
 MapSample map(vec3 ray){
     MapSample a = sphere(ray, // chrome spheres
-        vec3(-4.0f, -3.0f, 0.0f),
+        vec3(-4.0f, 0.0f, 0.0f),
         1.0f,
         8);
     a = join(a, sphere(ray, // chrome spheres
-        vec3(-2.0f, -3.0f, 0.0f),
+        vec3(-2.0f, 0.0f, 0.0f),
         1.0f,
         7));
     a = join(a, sphere(ray, // chrome spheres
-        vec3(0.0f, -3.0f, 0.0f),
+        vec3(0.0f, 0.0f, 0.0f),
         1.0f,
         6));
     a = join(a, sphere(ray, // chrome spheres
-        vec3(2.0f, -3.0f, 0.0f),
+        vec3(2.0f, 0.0f, 0.0f),
         1.0f,
         5));
     a = join(a, sphere(ray, // chrome spheres
-        vec3(4.0f, -3.0f, 0.0f),
+        vec3(4.0f, 0.0f, 0.0f),
         1.0f,
         4));
     a = join(a, plane(ray, // left wall
@@ -184,8 +184,8 @@ MapSample map(vec3 ray){
         vec3(0.0f, 0.0f, -1.0f),
         14));
     a = join(a, box(ray,    // light
-        vec3(0.0f, 6.9f, 0.0f),
-        vec3(2.0f),
+        vec3(0.0f, 4.75f, 0.0f),
+        vec3(1.0f, 0.1f, 4.0f),
         0));
     return a;
 }
@@ -210,6 +210,10 @@ vec3 roughBlend(vec3 newdir, vec3 oldir, vec3 N, int matid){
         );
 }
 
+float absum(vec3 a){
+    return abs(a.x) + abs(a.y) + abs(a.z);
+}
+
 vec3 trace(vec3 rd, vec3 eye, inout uint s){
     float e = 0.001;
     vec3 col = vec3(0.0, 0.0, 0.0);
@@ -218,7 +222,7 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
     for(int i = 0; i < 5; i++){    // bounces
         MapSample sam;
         
-        for(int j = 0; j < 60; j++){ // steps
+        for(int j = 0; j < 45; j++){ // steps
             sam = map(eye);
             if(abs(sam.distance) < e){
                 break;
@@ -226,8 +230,9 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
             eye = eye + rd * sam.distance;
         }
         
+        vec3 N = map_normal(eye);
+        
         {   // update direction
-            vec3 N = map_normal(eye);
             vec3 oldir = rd;
             rd = cosHemi(N, s);
             rd = roughBlend(rd, oldir, N, sam.matid);
@@ -235,7 +240,10 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
         }
         
         col += mask * materials[sam.matid].emittance.rgb;
-        mask *= 2.0 * materials[sam.matid].reflectance.rgb;
+        mask *= 2.0 * materials[sam.matid].reflectance.rgb * abs(dot(N, rd));
+        
+        if(absum(mask) < 0.000001)
+            break;
     }
     
     return col;
