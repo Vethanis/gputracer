@@ -67,6 +67,10 @@ inline float absSum(const glm::vec3& v){
     return fabsf(v.x) + fabsf(v.y) + fabsf(v.z);
 }
 
+bool v3_equal(const glm::vec3& a, const glm::vec3& b){
+    return absSum(a - b) == 0.0f;
+}
+
 int main(int argc, char* argv[]){
     srand(time(NULL));
     int WIDTH = 1280, HEIGHT = 720;
@@ -79,10 +83,6 @@ int main(int argc, char* argv[]){
     if(!read_map((float*)&sdf_buf.materials, sizeof(Material) * NUM_MATERIALS, "map.txt")){
         puts("Could not open map.txt");
         return 1;
-    }
-    // saves thousands of multiplies, nonlinear mix but linear values supplied by artist
-    for(size_t i = 0; i < NUM_MATERIALS; i++){
-        sdf_buf.materials[i].emittance.w *= sdf_buf.materials[i].emittance.w;
     }
     
     Camera camera;
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]){
         glm::vec3 eye = camera.getEye();
         glm::vec3 at = camera.getAt();
         input.poll(frameBegin(i, t), camera);
-        if(absSum(eye - camera.getEye()) != 0.0f || absSum(at - camera.getAt()) != 0.0f)
+        if(!v3_equal(eye, camera.getEye()) || !v3_equal(at, camera.getAt()))
             frame = 2;
         
         if(((int)(frame) & 31) == 31)

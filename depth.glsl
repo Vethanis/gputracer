@@ -58,19 +58,41 @@ float randUni(inout uint f){
     return fract(float(f) * 2.3283064e-10);
 }
 
-vec3 randomDir(vec3 N, vec3 rd, float roughness, inout uint s){
+vec3 uniHemi(vec3 N, inout uint s){
     vec3 dir;
+    float len;
     int i = 0;
     do{
         dir = vec3(rand(s), rand(s), rand(s));
-    }while(length(dir) > 1.0 && i < 10);
+        len = length(dir);
+    }while(len > 1.0 && i < 5);
     
     if(dot(dir, N) < 0.0)
         dir *= -1.0;
-    dir = normalize(dir);
-    vec3 ref = normalize(reflect(rd, N));
     
-    return normalize(mix(ref, dir, roughness));
+    return dir / len;
+}
+
+vec3 cosHemi(vec3 N, inout uint s){
+    // derived from smallpt
+    
+    float r1 = 3.141592 * 2.0 * randUni(s);
+    float r2 = randUni(s);
+    float r2s = sqrt(r2);
+    
+    vec3 u;
+    if(abs(N.x) > 0.1)
+        u = cross(vec3(0.0, 1.0, 0.0), N);
+    else
+        u = cross(vec3(1.0, 0.0, 0.0), N);
+    
+    u = normalize(u);
+    vec3 v = cross(N, u);
+    return normalize(
+        u * cos(r1) * r2s 
+        + v * sin(r1) * r2s 
+        + N * sqrt(1.0 - r2)
+        );
 }
 
 float vmax(vec3 a){
@@ -117,40 +139,24 @@ vec3 tri(vec3 r, float d){
 */
 
 MapSample map(vec3 ray){
-    MapSample a = sphere(ray, // white light
-        vec3(4.0f, 4.0f, 4.0f),
+    MapSample a = sphere(ray, // chrome spheres
+        vec3(-4.0f, -3.0f, 0.0f),
         1.0f,
-        0);
-    a = join(a, sphere(ray, // light
-        vec3(-4.0f, 4.0f, 4.0f),
-        1.0f,
-        1));
-    a = join(a, sphere(ray, // light
-        vec3(-4.0f, 4.0f, -4.0f),
-        1.0f,
-        2));
-    a = join(a, sphere(ray, // light
-        vec3(4.0f, 4.0f, -4.0f),
-        1.0f,
-        3));
+        8);
     a = join(a, sphere(ray, // chrome spheres
-        vec3(-4.0f, 0.0f, 0.0f),
-        1.0f,
-        8));
-    a = join(a, sphere(ray, // chrome spheres
-        vec3(-2.0f, 0.0f, 0.0f),
+        vec3(-2.0f, -3.0f, 0.0f),
         1.0f,
         7));
     a = join(a, sphere(ray, // chrome spheres
-        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.0f, -3.0f, 0.0f),
         1.0f,
         6));
     a = join(a, sphere(ray, // chrome spheres
-        vec3(2.0f, 0.0f, 0.0f),
+        vec3(2.0f, -3.0f, 0.0f),
         1.0f,
         5));
     a = join(a, sphere(ray, // chrome spheres
-        vec3(4.0f, 0.0f, 0.0f),
+        vec3(4.0f, -3.0f, 0.0f),
         1.0f,
         4));
     a = join(a, plane(ray, // left wall
@@ -177,6 +183,10 @@ MapSample map(vec3 ray){
         vec3(0.0f, 0.0f, 11.0f),
         vec3(0.0f, 0.0f, -1.0f),
         14));
+    a = join(a, box(ray,    // light
+        vec3(0.0f, 6.9f, 0.0f),
+        vec3(2.0f),
+        0));
     return a;
 }
 
@@ -187,6 +197,17 @@ vec3 map_normal(vec3 point){
         diff(map(point + e.zxy), map(point - e.zxy)),
         diff(map(point + e.zyx), map(point - e.zyx))
     ));
+}
+
+vec3 roughBlend(vec3 newdir, vec3 oldir, vec3 N, int matid){
+    return normalize(
+        mix(
+            normalize(
+                reflect(oldir, N)), 
+            newdir, 
+            ROUGHNESS(matid)
+            )
+        );
 }
 
 vec3 trace(vec3 rd, vec3 eye, inout uint s){
@@ -205,15 +226,16 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
             eye = eye + rd * sam.distance;
         }
         
-        vec3 N = map_normal(eye);
-        rd = randomDir(N, rd, ROUGHNESS(sam.matid), s);
-        eye += N * e * 10.0f;
+        {   // update direction
+            vec3 N = map_normal(eye);
+            vec3 oldir = rd;
+            rd = cosHemi(N, s);
+            rd = roughBlend(rd, oldir, N, sam.matid);
+            eye += N * e * 10.0f;
+        }
         
         col += mask * materials[sam.matid].emittance.rgb;
-        mask *= 2.0 * materials[sam.matid].reflectance.rgb * abs(dot(N, rd));
-        
-        if((abs(mask.x) + abs(mask.y) + abs(mask.z)) < e)
-            break;
+        mask *= 2.0 * materials[sam.matid].reflectance.rgb;
     }
     
     return col;
