@@ -72,7 +72,7 @@ bool v3_equal(const glm::vec3& a, const glm::vec3& b){
 }
 
 int main(int argc, char* argv[]){
-    srand(time(NULL));
+    srand((unsigned)time(NULL));
     int WIDTH = 1280, HEIGHT = 720;
     if(argc == 3){
         WIDTH = atoi(argv[1]);

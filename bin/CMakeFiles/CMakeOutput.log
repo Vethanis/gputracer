@@ -1,0 +1,192 @@
+Performing C SOURCE FILE Test OpenMP_FLAG_DETECTED succeeded with the following output:
+Change Dir: C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp
+
+Run Build Command:"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community/MSBuild/15.0/Bin/MSBuild.exe" "cmTC_1a658.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=15.0"
+Microsoft (R) Build Engine version 15.1.1012.6693
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 5/23/2017 8:00:59 PM.
+Project "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\cmTC_1a658.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "cmTC_1a658.dir\Debug\".
+  Creating directory "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\".
+  Creating directory "cmTC_1a658.dir\Debug\cmTC_1a658.tlog\".
+InitializeBuildStatus:
+  Creating "cmTC_1a658.dir\Debug\cmTC_1a658.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.25017\bin\HostX86\x86\CL.exe /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D OpenMP_FLAG_DETECTED /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_1a658.dir\Debug\\" /Fd"cmTC_1a658.dir\Debug\vc141.pdb" /Gd /TC /analyze- /errorReport:queue C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\src.c
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.10.25019 for x86
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  cl /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D OpenMP_FLAG_DETECTED /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_1a658.dir\Debug\\" /Fd"cmTC_1a658.dir\Debug\vc141.pdb" /Gd /TC /analyze- /errorReport:queue C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\src.c
+  src.c
+  
+Link:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.25017\bin\HostX86\x86\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\cmTC_1a658.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp/Debug/cmTC_1a658.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp/Debug/cmTC_1a658.lib" /MACHINE:X86 /SAFESEH   /machine:X86 cmTC_1a658.dir\Debug\src.obj
+  cmTC_1a658.vcxproj -> C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\cmTC_1a658.exe
+FinalizeBuildStatus:
+  Deleting file "cmTC_1a658.dir\Debug\cmTC_1a658.tlog\unsuccessfulbuild".
+  Touching "cmTC_1a658.dir\Debug\cmTC_1a658.tlog\cmTC_1a658.lastbuildstate".
+Done Building Project "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\cmTC_1a658.vcxproj" (default targets).
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.80
+
+Source file was:
+
+#include <omp.h>
+int main() {
+#ifdef _OPENMP
+  return 0;
+#else
+  breaks_on_purpose
+#endif
+}
+
+Performing C++ SOURCE FILE Test OpenMP_FLAG_DETECTED succeeded with the following output:
+Change Dir: C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp
+
+Run Build Command:"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community/MSBuild/15.0/Bin/MSBuild.exe" "cmTC_0ae2f.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=15.0"
+Microsoft (R) Build Engine version 15.1.1012.6693
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 5/23/2017 8:01:01 PM.
+Project "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\cmTC_0ae2f.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "cmTC_0ae2f.dir\Debug\".
+  Creating directory "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\".
+  Creating directory "cmTC_0ae2f.dir\Debug\cmTC_0ae2f.tlog\".
+InitializeBuildStatus:
+  Creating "cmTC_0ae2f.dir\Debug\cmTC_0ae2f.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.25017\bin\HostX86\x86\CL.exe /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D OpenMP_FLAG_DETECTED /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /openmp /Fo"cmTC_0ae2f.dir\Debug\\" /Fd"cmTC_0ae2f.dir\Debug\vc141.pdb" /Gd /TP /analyze- /errorReport:queue C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\src.cxx
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.10.25019 for x86
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  cl /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D OpenMP_FLAG_DETECTED /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /openmp /Fo"cmTC_0ae2f.dir\Debug\\" /Fd"cmTC_0ae2f.dir\Debug\vc141.pdb" /Gd /TP /analyze- /errorReport:queue C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\src.cxx
+  src.cxx
+  
+Link:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.25017\bin\HostX86\x86\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\cmTC_0ae2f.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp/Debug/cmTC_0ae2f.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp/Debug/cmTC_0ae2f.lib" /MACHINE:X86 /SAFESEH   /machine:X86 cmTC_0ae2f.dir\Debug\src.obj
+  cmTC_0ae2f.vcxproj -> C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\cmTC_0ae2f.exe
+FinalizeBuildStatus:
+  Deleting file "cmTC_0ae2f.dir\Debug\cmTC_0ae2f.tlog\unsuccessfulbuild".
+  Touching "cmTC_0ae2f.dir\Debug\cmTC_0ae2f.tlog\cmTC_0ae2f.lastbuildstate".
+Done Building Project "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\cmTC_0ae2f.vcxproj" (default targets).
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.82
+
+Source file was:
+
+#include <omp.h>
+int main() {
+#ifdef _OPENMP
+  return 0;
+#else
+  breaks_on_purpose
+#endif
+}
+
+Performing C SOURCE FILE Test OpenMP_FLAG_DETECTED succeeded with the following output:
+Change Dir: C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp
+
+Run Build Command:"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community/MSBuild/15.0/Bin/MSBuild.exe" "cmTC_53f36.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=15.0"
+Microsoft (R) Build Engine version 15.1.1012.6693
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 5/23/2017 8:04:18 PM.
+Project "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\cmTC_53f36.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "cmTC_53f36.dir\Debug\".
+  Creating directory "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\".
+  Creating directory "cmTC_53f36.dir\Debug\cmTC_53f36.tlog\".
+InitializeBuildStatus:
+  Creating "cmTC_53f36.dir\Debug\cmTC_53f36.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.25017\bin\HostX86\x64\CL.exe /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D OpenMP_FLAG_DETECTED /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_53f36.dir\Debug\\" /Fd"cmTC_53f36.dir\Debug\vc141.pdb" /Gd /TC /errorReport:queue C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\src.c
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.10.25019 for x64
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  cl /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D OpenMP_FLAG_DETECTED /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_53f36.dir\Debug\\" /Fd"cmTC_53f36.dir\Debug\vc141.pdb" /Gd /TC /errorReport:queue C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\src.c
+  src.c
+  
+Link:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.25017\bin\HostX86\x64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\cmTC_53f36.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp/Debug/cmTC_53f36.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp/Debug/cmTC_53f36.lib" /MACHINE:X64   /machine:x64 cmTC_53f36.dir\Debug\src.obj
+  cmTC_53f36.vcxproj -> C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\cmTC_53f36.exe
+FinalizeBuildStatus:
+  Deleting file "cmTC_53f36.dir\Debug\cmTC_53f36.tlog\unsuccessfulbuild".
+  Touching "cmTC_53f36.dir\Debug\cmTC_53f36.tlog\cmTC_53f36.lastbuildstate".
+Done Building Project "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\cmTC_53f36.vcxproj" (default targets).
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.78
+
+Source file was:
+
+#include <omp.h>
+int main() {
+#ifdef _OPENMP
+  return 0;
+#else
+  breaks_on_purpose
+#endif
+}
+
+Performing C++ SOURCE FILE Test OpenMP_FLAG_DETECTED succeeded with the following output:
+Change Dir: C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp
+
+Run Build Command:"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community/MSBuild/15.0/Bin/MSBuild.exe" "cmTC_05939.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=15.0"
+Microsoft (R) Build Engine version 15.1.1012.6693
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 5/23/2017 8:04:20 PM.
+Project "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\cmTC_05939.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "cmTC_05939.dir\Debug\".
+  Creating directory "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\".
+  Creating directory "cmTC_05939.dir\Debug\cmTC_05939.tlog\".
+InitializeBuildStatus:
+  Creating "cmTC_05939.dir\Debug\cmTC_05939.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.25017\bin\HostX86\x64\CL.exe /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D OpenMP_FLAG_DETECTED /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /openmp /Fo"cmTC_05939.dir\Debug\\" /Fd"cmTC_05939.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\src.cxx
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.10.25019 for x64
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  cl /c /Zi /W3 /WX- /diagnostics:classic /Od /Ob0 /D WIN32 /D _WINDOWS /D OpenMP_FLAG_DETECTED /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /openmp /Fo"cmTC_05939.dir\Debug\\" /Fd"cmTC_05939.dir\Debug\vc141.pdb" /Gd /TP /errorReport:queue C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\src.cxx
+  src.cxx
+  
+Link:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.25017\bin\HostX86\x64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\cmTC_05939.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp/Debug/cmTC_05939.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/Lauren/workspace/gputracer/bin/CMakeFiles/CMakeTmp/Debug/cmTC_05939.lib" /MACHINE:X64   /machine:x64 cmTC_05939.dir\Debug\src.obj
+  cmTC_05939.vcxproj -> C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\Debug\cmTC_05939.exe
+FinalizeBuildStatus:
+  Deleting file "cmTC_05939.dir\Debug\cmTC_05939.tlog\unsuccessfulbuild".
+  Touching "cmTC_05939.dir\Debug\cmTC_05939.tlog\cmTC_05939.lastbuildstate".
+Done Building Project "C:\Users\Lauren\workspace\gputracer\bin\CMakeFiles\CMakeTmp\cmTC_05939.vcxproj" (default targets).
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.81
+
+Source file was:
+
+#include <omp.h>
+int main() {
+#ifdef _OPENMP
+  return 0;
+#else
+  breaks_on_purpose
+#endif
+}
+
