@@ -1,3 +1,0 @@
-C:/Users/Lauren/workspace/gputracer/build/CMakeFiles/main.dir
-C:/Users/Lauren/workspace/gputracer/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/Lauren/workspace/gputracer/build/CMakeFiles/ZERO_CHECK.dir
