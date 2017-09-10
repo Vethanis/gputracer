@@ -16,9 +16,10 @@
 #include "string.h"
 #include <fstream>
 
-using namespace std;
+#include "image.h"
 
-constexpr size_t NUM_MATERIALS = 32;
+using namespace std;
+using namespace glm;
 
 struct Uniforms{
     glm::mat4 IVP;
@@ -27,12 +28,23 @@ struct Uniforms{
     glm::vec4 seed;
 };
 
-struct Material{
-    glm::vec4 reflectance, emittance;
+struct SDF{
+    vec4 position; // xyz -> position w -> sdf type
+    vec4 scale; // xyz -> scale w -> blend type
+    vec4 rotation; // quaternion
+    vec4 parameters; 
+    // x -> object id 
+    // y -> material id 
+    // z -> blend smoothness
+    void set_distance_type(s32 t) { position.w = f32(t); }
+    void set_blend_type(s32 t){ scale.w = f32(t); }
+    void set_object_id(s32 i){ parameters.x = f32(i); }
+    void set_material_id(s32 i){ parameters.y = f32(i); }
+    void set_blend_smoothness(f32 s){ parameters.z = s; }
 };
 
-struct SDF_BUF{
-    Material materials[NUM_MATERIALS];
+struct SDF_Edits{
+    SDF sdfs[1024];
 };
 
 float frameBegin(unsigned& i, float& t){
@@ -79,11 +91,13 @@ int main(int argc, char* argv[]){
         HEIGHT = atoi(argv[2]);
     }
     
-    SDF_BUF sdf_buf;
-    if(!read_map((float*)&sdf_buf.materials, sizeof(Material) * NUM_MATERIALS, "map.txt")){
-        puts("Could not open map.txt");
-        return 1;
-    }
+    SDF_Edits sdf_edits;
+
+    Texture4uc textures[] = {
+        Texture4uc("reflectance.png"),
+        Texture4uc("emittance.png"),
+        Texture4uc("normal.png")
+    };
     
     Camera camera;
     camera.resize(WIDTH, HEIGHT);
@@ -111,7 +125,7 @@ int main(int argc, char* argv[]){
     uni.nfwh = glm::vec4(camera.getNear(), camera.getFar(), (float)WIDTH, (float)HEIGHT);
     UBO unibuf(&uni, sizeof(uni), 2);
     
-    SSBO sdfbuf(&sdf_buf, sizeof(sdf_buf), 3);
+    SSBO sdfbuf(&sdf_edits, sizeof(SDF_Edits), 3);
     
     input.poll();
     unsigned i = 0;
