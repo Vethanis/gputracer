@@ -1,7 +1,9 @@
 #include "image.h"
-#include "lodepng.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 void image::load(const char* filename){
-    unsigned error = lodepng_decode32_file(&data, &width, &height, filename);
-    if(error) { printf("error %u: %s\n", error, lodepng_error_text(error)); }
+    int comps = 0;
+    data = stbi_load(filename, &width, &height, &comps, 4);
 }

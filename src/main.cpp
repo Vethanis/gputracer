@@ -14,9 +14,29 @@
 #include "time.h"
 #include <random>
 #include "string.h"
-#include <fstream>
-
 #include "image.h"
+#include <glm/gtx/euler_angles.hpp> 
+
+#define SDF_SPHERE 0
+#define SDF_BOX 1
+#define SDF_PLANE 2
+#define SDF_CONE 3
+#define SDF_PYRAMID 4
+#define SDF_TORUS 5
+#define SDF_CYLINDER 6
+#define SDF_CAPSULE 7
+#define SDF_DISK 8
+#define SDF_TYPE_COUNT 9
+
+#define SDF_BLEND_UNION 0
+#define SDF_BLEND_DIFF 1
+#define SDF_BLEND_INT 2
+#define SDF_BLEND_SMTH_UNION 3
+#define SDF_BLEND_SMTH_DIFF 4
+#define SDF_BLEND_SMTH_INT 5
+#define SDF_BLEND_COUNT 6
+
+#define MATERIAL_COUNT 4
 
 using namespace std;
 using namespace glm;
@@ -28,23 +48,91 @@ struct Uniforms{
     glm::vec4 seed;
 };
 
-struct SDF{
-    vec4 position; // xyz -> position w -> sdf type
-    vec4 scale; // xyz -> scale w -> blend type
-    vec4 rotation; // quaternion
-    vec4 parameters; 
-    // x -> object id 
-    // y -> material id 
-    // z -> blend smoothness
-    void set_distance_type(s32 t) { position.w = f32(t); }
-    void set_blend_type(s32 t){ scale.w = f32(t); }
-    void set_object_id(s32 i){ parameters.x = f32(i); }
-    void set_material_id(s32 i){ parameters.y = f32(i); }
-    void set_blend_smoothness(f32 s){ parameters.z = s; }
+struct edit_params{
+    vec3 t, r, s;
+    int dis_type, blend_type, mat_id;
+    float smoothness;
+    edit_params(){
+        memset(this, 0, sizeof(*this));
+        smoothness = 0.5f;
+    }
 };
 
-struct SDF_Edits{
-    SDF sdfs[1024];
+class SDF {
+    mat4 inv_xform;
+    vec4 parameters; // [dis_type, blend_type, smoothness, material_id]
+    vec4 extra_params; // [object_id, uv_scale]
+public:
+    SDF(){}
+    SDF(const edit_params& params){
+        inv_xform = glm::inverse(
+            glm::translate({}, params.t) * 
+            glm::orientate4(params.r) * 
+            glm::scale({}, params.s)
+        );
+        parameters = vec4(
+            float(params.dis_type),
+            float(params.blend_type),
+            params.smoothness,
+            float(params.mat_id)
+        );
+    }
+};
+
+class SDF_Edits{
+    SDF* sdfs;
+    SSBO ssbo;
+    int capacity;
+    int tail;
+public:
+    SDF_Edits() : sdfs(nullptr), capacity(0), tail(0){
+    }
+    ~SDF_Edits(){
+        delete[] sdfs;
+    }
+    void init(int cap, int channel){
+        if(sdfs){
+            delete[] sdfs;
+        }
+        capacity = cap;
+        tail = 0;
+        if(capacity){
+            sdfs = new SDF[capacity];
+        }
+        ssbo.init(sdfs, sizeof(SDF) * tail, channel);
+    }
+    void add_edit(const edit_params& params){
+        assert(sdfs && tail < capacity);
+        sdfs[tail++] = SDF(params);
+        if(tail >= capacity){
+            const int new_capacity = capacity << 1;
+            SDF* new_sdfs = new SDF[new_capacity];
+            memcpy(new_sdfs, sdfs, sizeof(SDF) * tail);
+            delete[] sdfs;
+            sdfs = new_sdfs;
+            capacity = new_capacity;
+        }
+    }
+    void update_brush(const edit_params& params){
+        if(!capacity){
+            capacity = 8;
+            tail = 1;
+            sdfs = new SDF[capacity];
+        }
+        if(!tail)
+            ++tail;
+        
+        sdfs[0] = SDF(params);
+    }
+    void undo(){
+        if(tail > 0){
+            --tail;
+        }
+    }
+    void uniform(ComputeShader& shader){
+        shader.setUniformInt("num_sdfs", tail);
+        ssbo.upload(sdfs, sizeof(SDF) * tail);
+    }
 };
 
 float frameBegin(unsigned& i, float& t){
@@ -60,20 +148,6 @@ float frameBegin(unsigned& i, float& t){
     }
     return dt;
 }
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-
-bool read_map(float* buf, int len, const char* filename){
-    ifstream fs(filename);
-    if(!fs.is_open())return false;
-    
-    for(int i = 0; i < len && fs.good(); i++){
-        fs >> buf[i];
-    }
-    
-    fs.close();
-    return true;
-}
 
 inline float absSum(const glm::vec3& v){
     return fabsf(v.x) + fabsf(v.y) + fabsf(v.z);
@@ -83,6 +157,61 @@ bool v3_equal(const glm::vec3& a, const glm::vec3& b){
     return absSum(a - b) == 0.0f;
 }
 
+void editing_behaviour(Input& input, Camera& cam, SDF_Edits& edits){
+    static edit_params params;
+
+    params.t = cam.getEye() + cam.getAxis() * (1.0f + params.s.z * params.s.x * params.s.y);
+    params.r = cam.getAxis();
+
+    bool shouldAppend = false;
+
+    for(int* i = input.beginDownKeys(); i != input.endDownKeys(); ++i){
+        switch(*i){
+            case GLFW_MOUSE_BUTTON_1:
+                shouldAppend = true;
+            break;
+            case GLFW_KEY_1:
+            break;
+                params.dis_type = glm::clamp(params.dis_type - 1, 0, SDF_TYPE_COUNT - 1);
+            case GLFW_KEY_2:
+                params.dis_type = glm::clamp(params.dis_type + 1, 0, SDF_TYPE_COUNT - 1);
+            break;
+            case GLFW_KEY_3:
+                params.blend_type = glm::clamp(params.blend_type - 1, 0, SDF_BLEND_COUNT - 1);
+            break;
+            case GLFW_KEY_4:
+                params.blend_type = glm::clamp(params.blend_type + 1, 0, SDF_BLEND_COUNT - 1);
+            break;
+            case GLFW_KEY_5:
+                params.smoothness *= 0.99f;
+            break;
+            case GLFW_KEY_6:
+                params.smoothness *= 1.01f;
+            break;
+            case GLFW_KEY_UP:
+                params.s *= 1.01f;
+            break;
+            case GLFW_KEY_DOWN:
+                params.s *= 0.99f;
+            break;
+            case GLFW_KEY_LEFT:
+                params.mat_id = glm::clamp(params.mat_id - 1, 0, MATERIAL_COUNT - 1);
+            break;
+            case GLFW_KEY_RIGHT:
+                params.mat_id = glm::clamp(params.mat_id + 1, 0, MATERIAL_COUNT - 1);
+            break;
+            case GLFW_KEY_Z:
+                edits.undo();
+            break;
+        }
+    }
+
+    edits.update_brush(params);
+    if(shouldAppend){
+        edits.add_edit(params);
+    }
+}
+
 int main(int argc, char* argv[]){
     srand((unsigned)time(NULL));
     int WIDTH = 1280, HEIGHT = 720;
@@ -90,14 +219,6 @@ int main(int argc, char* argv[]){
         WIDTH = atoi(argv[1]);
         HEIGHT = atoi(argv[2]);
     }
-    
-    SDF_Edits sdf_edits;
-
-    Texture4uc textures[] = {
-        Texture4uc("reflectance.png"),
-        Texture4uc("emittance.png"),
-        Texture4uc("normal.png")
-    };
     
     Camera camera;
     camera.resize(WIDTH, HEIGHT);
@@ -112,21 +233,30 @@ int main(int argc, char* argv[]){
     Window window(WIDTH, HEIGHT, 4, 3, "gputracer");
     Input input(window.getWindow());
     
-    GLProgram color("vert.glsl", "frag.glsl");
-    ComputeShader depth("depth.glsl");
-    Texture4f colTex(WIDTH, HEIGHT);
-    colTex.setCSBinding(0);
+    GLProgram color("assets/vert.glsl", "assets/frag.glsl");
+    ComputeShader depth("assets/depth.glsl");
+
+    Texture4f colTex;
+    colTex.init(WIDTH, HEIGHT);
+    colTex.setCSBinding(0, GL_READ_WRITE);
+
     GLScreen screen;
     Timer timer;
+    SDF_Edits edits;
+
+    edits.init(32, 3);
     
     Uniforms uni;
     uni.IVP = camera.getIVP();
     uni.eye = glm::vec4(camera.getEye(), 1.0f);
     uni.nfwh = glm::vec4(camera.getNear(), camera.getFar(), (float)WIDTH, (float)HEIGHT);
     UBO unibuf(&uni, sizeof(uni), 2);
-    
-    SSBO sdfbuf(&sdf_edits, sizeof(SDF_Edits), 3);
-    
+
+    Texture4uc textures[3];
+    textures[0].init("assets/pt_tex_reflection.png");
+    textures[1].init("assets/pt_tex_emissive.png");
+    textures[2].init("assets/pt_tex_normal.png");
+
     input.poll();
     unsigned i = 0;
     float frame = 1.0f;
@@ -137,17 +267,20 @@ int main(int argc, char* argv[]){
         glm::vec3 at = camera.getAt();
         input.poll(frameBegin(i, t), camera);
         if(!v3_equal(eye, camera.getEye()) || !v3_equal(at, camera.getAt()))
-            frame = 2;
-        
-        if(((int)(frame) & 31) == 31)
-            printf("SPP: %f\n", frame);
+            frame = 2.0f;
         
         uni.IVP = camera.getIVP();
         uni.eye = glm::vec4(camera.getEye(), 1.0f);
         uni.seed = glm::vec4(rand() * irm, rand() * irm, rand() * irm, frame);
         unibuf.upload(&uni, sizeof(uni));
+
+        editing_behaviour(input, camera, edits);
         
         depth.bind();
+        textures[0].bind(4, "reflectanceTex0", depth);
+        textures[1].bind(5, "emittanceTex0", depth);
+        textures[2].bind(6, "normalTex0", depth);
+        edits.uniform(depth);
         depth.call(callsizeX, callsizeY, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         
@@ -156,7 +289,9 @@ int main(int argc, char* argv[]){
         screen.draw();
         
         window.swap();
-        frame = MIN(frame + 1.0f, 1000000.0f);
+        if(frame < 10000000.0f){
+            frame++;
+        }
     }
 
     return 0;

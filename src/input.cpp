@@ -13,6 +13,16 @@ float Input::m_cursorY = 0.0f;
 float Input::m_relCursorX = 0.0f;
 float Input::m_relCursorY = 0.0f;
 
+int downKeys[256];
+int downKeyTail = 0;
+int upKeys[256];
+int upKeyTail = 0;
+
+int* Input::beginDownKeys(){ return downKeys; }
+int* Input::endDownKeys() { return downKeys + downKeyTail; }
+int* Input::beginUpKeys(){ return upKeys; }
+int* Input::endUpKeys(){ return upKeys + upKeyTail; }
+
 Input::Input(GLFWwindow* window) : m_glwindow(window){
     glfwSetInputMode(m_glwindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetKeyCallback(m_glwindow, key_callback);
@@ -22,10 +32,14 @@ Input::Input(GLFWwindow* window) : m_glwindow(window){
 }
 
 void Input::poll(){
+    downKeyTail = 0;
+    upKeyTail = 0;
     glfwPollEvents();
 }
 
 void Input::poll(float dt, Camera& cam){
+    downKeyTail = 0;
+    upKeyTail = 0;
     glfwPollEvents();
     glm::vec3 v(0.0f);
     v.z -= glfwGetKey(m_glwindow, GLFW_KEY_W) ? dt : 0.0f;
@@ -76,12 +90,16 @@ float Input::relCursorY(){
 
 void Input::mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
     if(action == GLFW_PRESS){
+        downKeys[downKeyTail++] = button;
+
         if(button == GLFW_MOUSE_BUTTON_RIGHT)
             Input::m_rightMouseDown = true;
         else if(button == GLFW_MOUSE_BUTTON_LEFT)
             Input::m_leftMouseDown = true;
     }
     else if(action == GLFW_RELEASE){
+        upKeys[upKeyTail++] = button;
+
         if(button == GLFW_MOUSE_BUTTON_RIGHT)
             Input::m_rightMouseDown = false;
         else if(button == GLFW_MOUSE_BUTTON_LEFT)
@@ -102,6 +120,14 @@ void Input::scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
 }
 
 void Input::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    if(action == GLFW_PRESS){
+        downKeys[downKeyTail++] = key;
+    }
+    else if(action == GLFW_RELEASE){
+        upKeys[upKeyTail++] = key;
+    }
+
+    if (key == GLFW_KEY_ESCAPE){
         glfwSetWindowShouldClose(window, GL_TRUE);
+    }
 }

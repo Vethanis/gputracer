@@ -1,5 +1,41 @@
 #version 430 core
 
+#define EYE eye.xyz
+#define NEAR nfwh.x
+#define FAR nfwh.y
+#define WIDTH nfwh.z
+#define HEIGHT nfwh.w
+#define SAMPLES seed.w
+
+#define SDF_SPHERE 0
+#define SDF_BOX 1
+#define SDF_PLANE 2
+#define SDF_CONE 3
+#define SDF_PYRAMID 4
+#define SDF_TORUS 5
+#define SDF_CYLINDER 6
+#define SDF_CAPSULE 7
+#define SDF_DISK 8
+#define SDF_TYPE_COUNT 9
+
+#define SDF_BLEND_UNION 0
+#define SDF_BLEND_DIFF 1
+#define SDF_BLEND_INT 2
+#define SDF_BLEND_SMTH_UNION 3
+#define SDF_BLEND_SMTH_DIFF 4
+#define SDF_BLEND_SMTH_INT 5
+#define SDF_BLEND_COUNT 6
+
+#define MATERIAL_COUNT 4
+
+#define sdf_inv_transform(i) sdfs[i].inv_xform
+#define sdf_distance_type(i) int(sdfs[i].parameters.x)
+#define sdf_blend_type(i) int(sdfs[i].parameters.y)
+#define sdf_blend_smoothness(i) sdfs[i].parameters.z
+#define sdf_material_id(i) int(sdfs[i].parameters.w)
+#define sdf_roughness(refl) refl.w
+#define sdf_uv_scale(i) sdfs[i].extra_params.y
+
 layout(local_size_x = 8, local_size_y = 8) in;
 
 layout(binding = 0, rgba32f) uniform image2D color;
@@ -12,57 +48,32 @@ layout(binding=2) uniform CAM_BUF
     vec4 seed;
 };
 
-#define EYE eye.xyz
-#define NEAR nfwh.x
-#define FAR nfwh.y
-#define WIDTH nfwh.z
-#define HEIGHT nfwh.w
-#define SAMPLES seed.w
-
-struct SDF{
-    vec4 position; // w sdf type
-    vec4 scale; // w blend type
-    vec4 rotation; // quaternion
-    vec4 parameters; 
-    // x -> object id 
-    // y -> material id 
-    // z -> blend smoothness
-    // w -> uv scale
+struct SDF {
+    mat4 inv_xform;
+    vec4 parameters; // [dis_type, blend_type, smoothness, material_id]
+    vec4 extra_params; // [object_id, uv_scale]
 };
 
-layout(binding=3) buffer SDF_BUF{   
+layout(binding=3) buffer SDF_BUF {   
     SDF sdfs[];
 };
 
 uniform int num_sdfs;
 
-#define sdf_position(i) sdfs[i].position.xyz
-#define sdf_rotation(i) sdfs[i].rotation.xyzw
-#define sdf_scale(i) sdfs[i].scale.xyz
-#define sdf_radius(i) sdfs[i].scale.x
-#define sdf_direction(i) sdfs[i].rotation.xyz
-#define sdf_distance_type(i) int(sdfs[i].position.w)
-#define sdf_blend_type(i) int(sdfs[i].scale.w)
-#define sdf_blend_smoothness(i) sdfs[i].parameters.z
-#define sdf_object_id(i) int(sdfs[i].parameters.x)
-#define sdf_material_id(i) int(sdfs[i].parameters.y)
-#define sdf_roughness(refl) refl.w
-#define sdf_uv_scale(i) sdfs[i].parameters.w
+uniform sampler2D reflectanceTex0;
+uniform sampler2D reflectanceTex1;
+uniform sampler2D reflectanceTex2;
+uniform sampler2D reflectanceTex3;
 
-layout(binding=8 ) uniform sampler2D reflectanceTex0;
-layout(binding=9 ) uniform sampler2D reflectanceTex1;
-layout(binding=10) uniform sampler2D reflectanceTex2;
-layout(binding=11) uniform sampler2D reflectanceTex3;
+uniform sampler2D emittanceTex0;
+uniform sampler2D emittanceTex1;
+uniform sampler2D emittanceTex2;
+uniform sampler2D emittanceTex3;
 
-layout(binding=12) uniform sampler2D emittanceTex0;
-layout(binding=13) uniform sampler2D emittanceTex1;
-layout(binding=14) uniform sampler2D emittanceTex2;
-layout(binding=15) uniform sampler2D emittanceTex3;
-
-layout(binding=16) uniform sampler2D normalTex0;
-layout(binding=17) uniform sampler2D normalTex1;
-layout(binding=18) uniform sampler2D normalTex2;
-layout(binding=19) uniform sampler2D normalTex3;
+uniform sampler2D normalTex0;
+uniform sampler2D normalTex1;
+uniform sampler2D normalTex2;
+uniform sampler2D normalTex3;
 
 vec4 sdf_reflectance_texture(int i, vec2 uv){
     int mat_id = sdf_material_id(i);
@@ -70,7 +81,7 @@ vec4 sdf_reflectance_texture(int i, vec2 uv){
         case 0: return texture(reflectanceTex0, uv);
         case 1: return texture(reflectanceTex1, uv);
         case 2: return texture(reflectanceTex2, uv);
-        case 3: return texture(reflectanceTex4, uv);
+        case 3: return texture(reflectanceTex3, uv);
     }
     return vec4(0.0);
 }
@@ -81,7 +92,7 @@ vec4 sdf_emittance_texture(int i, vec2 uv){
         case 0: return texture(emittanceTex0, uv);
         case 1: return texture(emittanceTex1, uv);
         case 2: return texture(emittanceTex2, uv);
-        case 3: return texture(emittanceTex4, uv);
+        case 3: return texture(emittanceTex3, uv);
     }
     return vec4(0.0);
 }
@@ -92,7 +103,7 @@ vec3 sdf_normal_texture(int i, vec2 uv){
         case 0: return texture(normalTex0, uv).rgb;
         case 1: return texture(normalTex1, uv).rgb;
         case 2: return texture(normalTex2, uv).rgb;
-        case 3: return texture(normalTex4, uv).rgb;
+        case 3: return texture(normalTex3, uv).rgb;
     }
     return vec3(0.0, 0.0, -1.0);
 }
@@ -101,36 +112,67 @@ float vmax(vec3 a){
     return max(max(a.x, a.y), a.z);
 }
 
+// these rays are all pre-transformed into unit space
+
 vec2 sdf_sphere(int id, vec3 ray){
-    return vec2(length(ray) - sdf_radius(id), float(id));
+    return vec2(length(ray) - 1.0, float(id));
 }
 
 vec2 sdf_box(int id, vec3 ray){
-    vec3 d = abs(ray) - sdf_scale(id);
-    return vec2(vmax(d), id);
+    vec3 d = abs(ray) - vec3(1.0);
+    return vec2(vmax(d), float(id));
 }
 
 vec2 sdf_plane(int id, vec3 ray){
-    return vec2(dot(ray, sdf_direction(id)), float(id));
+    return vec2(dot(ray, vec3(0.0, 1.0, 0.0)), float(id));
+}
+
+// Not Yet Implemented
+vec2 sdf_cone(int id, vec3 ray){
+    return vec2(0.0);   
+}
+
+// Not Yet Implemented
+vec2 sdf_pyramid(int id, vec3 ray){
+    return vec2(0.0);   
+}
+
+// Not Yet Implemented
+vec2 sdf_torus(int id, vec3 ray){
+    return vec2(0.0);   
+}
+
+// Not Yet Implemented
+vec2 sdf_cylinder(int id, vec3 ray){
+    return vec2(0.0);   
+}
+
+// Not Yet Implemented
+vec2 sdf_capsule(int id, vec3 ray){
+    return vec2(0.0);   
+}
+
+// Not Yet Implemented
+vec2 sdf_disk(int id, vec3 ray){
+    return vec2(0.0);   
 }
 
 vec2 sdf_distance(int i, vec3 point){
     // transform point into unit sphere space
-    point = point - sdf_position(i);
-    point = quat_inv_rotate(point, sdf_rotation(i));
-    point = point / sdf_scale(i);
+    vec4 xpoint = sdf_inv_transform(i) * vec4(point.xyz, 1.0);
+    point = (xpoint / xpoint.w).xyz;
 
     // use unit-sphere sdfs
     switch(sdf_distance_type(i)){
-        case 0: return sdf_sphere(i, point);
-        case 1: return sdf_box(i, point);
-        case 2: return sdf_plane(i, point);
-        case 3: return sdf_cone(i, point);
-        case 4: return sdf_pyramid(i, point);
-        case 5: return sdf_torus(i, point);
-        case 6: return sdf_cylinder(i, point);
-        case 7: return sdf_capsule(i, point);
-        case 8: return sdf_disk(i, point);
+        case SDF_SPHERE: return sdf_sphere(i, point);
+        case SDF_BOX: return sdf_box(i, point);
+        case SDF_PLANE: return sdf_plane(i, point);
+        case SDF_CONE: return sdf_cone(i, point);
+        case SDF_PYRAMID: return sdf_pyramid(i, point);
+        case SDF_TORUS: return sdf_torus(i, point);
+        case SDF_CYLINDER: return sdf_cylinder(i, point);
+        case SDF_CAPSULE: return sdf_capsule(i, point);
+        case SDF_DISK: return sdf_disk(i, point);
     }
     
     return vec2(100000.0, 0.0);
@@ -170,12 +212,12 @@ vec2 sdf_blend_smooth_intersect(vec2 a, vec2 b, float k){
 
 vec2 sdf_blend(int i, vec2 a, vec2 b){
     switch(sdf_blend_type(i)){
-        case 0: return sdf_blend_union(a, b);
-        case 1: return sdf_blend_difference(a, b);
-        case 2: return sdf_blend_intersect(a, b);
-        case 3: return sdf_blend_smooth_union(a, b, sdf_blend_smoothness(i));
-        case 4: return sdf_blend_smooth_difference(a, b, sdf_blend_smoothness(i));
-        case 5: return sdf_blend_smooth_intersect(a, b, sdf_blend_smoothness(i));
+        case SDF_BLEND_UNION: return sdf_blend_union(a, b);
+        case SDF_BLEND_DIFF: return sdf_blend_difference(a, b);
+        case SDF_BLEND_INT: return sdf_blend_intersect(a, b);
+        case SDF_BLEND_SMTH_UNION: return sdf_blend_smooth_union(a, b, sdf_blend_smoothness(i));
+        case SDF_BLEND_SMTH_DIFF: return sdf_blend_smooth_difference(a, b, sdf_blend_smoothness(i));
+        case SDF_BLEND_SMTH_INT: return sdf_blend_smooth_intersect(a, b, sdf_blend_smoothness(i));
     }
     return sdf_blend_union(a, b);
 }
@@ -185,7 +227,7 @@ vec2 sdf_map(vec3 ray){
     sam.x = 100000.0;
     sam.y = -1.0;
     for(int i = 0; i < num_sdfs; ++i){
-        sam = sdf_blend(i, sdf_distance(i, ray), x);
+        sam = sdf_blend(i, sam, sdf_distance(i, ray));
     }
     return sam;
 }
@@ -193,9 +235,9 @@ vec2 sdf_map(vec3 ray){
 vec3 sdf_map_normal(vec3 point){
     vec3 e = vec3(0.0001, 0.0, 0.0);
     return normalize(vec3(
-        map(point + e.xyz).x - map(point - e.xyz).x,
-        map(point + e.zxy).x - map(point - e.zxy).x,
-        map(point + e.zyx).x - map(point - e.zyx).x
+        sdf_map(point + e.xyz).x - sdf_map(point - e.xyz).x,
+        sdf_map(point + e.zxy).x - sdf_map(point - e.zxy).x,
+        sdf_map(point + e.zyx).x - sdf_map(point - e.zyx).x
     ));
 }
 
@@ -222,37 +264,16 @@ vec3 uniHemi(vec3 N, inout uint s){
     vec3 dir;
     float len;
     int i = 0;
-    do{
+    do {
         dir = vec3(rand(s), rand(s), rand(s));
         len = length(dir);
-    }while(len > 1.0 && i < 5);
+    }
+    while(len > 1.0 && i < 5);
     
     if(dot(dir, N) < 0.0)
         dir *= -1.0;
     
     return dir / len;
-}
-
-vec3 cosHemi(vec3 N, inout uint s){
-    // derived from smallpt
-    
-    float r1 = 3.141592 * 2.0 * randUni(s);
-    float r2 = randUni(s);
-    float r2s = sqrt(r2);
-    
-    vec3 u;
-    if(abs(N.x) > 0.1)
-        u = cross(vec3(0.0, 1.0, 0.0), N);
-    else
-        u = cross(vec3(1.0, 0.0, 0.0), N);
-    
-    u = normalize(u);
-    vec3 v = cross(N, u);
-    return normalize(
-        u * cos(r1) * r2s 
-        + v * sin(r1) * r2s 
-        + N * sqrt(1.0 - r2)
-        );
 }
 
 vec3 roughBlend(vec3 newdir, vec3 I, vec3 N, float roughness){
@@ -264,10 +285,6 @@ vec3 roughBlend(vec3 newdir, vec3 I, vec3 N, float roughness){
             roughness
             )
         );
-}
-
-float absum(vec3 a){
-    return abs(a.x) + abs(a.y) + abs(a.z);
 }
 
 vec2 uv_from_ray(vec3 N, vec3 p){
@@ -292,13 +309,13 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
         
         for(int j = 0; j < 45; j++){ // steps
             sam = sdf_map(eye);
-            if(abs(sam.distance) < e){
+            if(abs(sam.x) < e){
                 break;
             }
             eye = eye + rd * sam.x;
         }
         
-        vec3 N = map_normal(eye);
+        vec3 N = sdf_map_normal(eye);
 
         const int sdf_id = int(sam.y);
         if(sdf_id < 0 || sdf_id >= num_sdfs)

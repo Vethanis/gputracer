@@ -28,5 +28,9 @@ public:
     static float relCursorX();
     static float relCursorY();
     static int activeKey();
+    static int* beginDownKeys();
+    static int* endDownKeys();
+    static int* beginUpKeys();
+    static int* endUpKeys();
 };
 #endif

@@ -28,14 +28,21 @@ fi
 
 GLSL="src/*.glsl"
 DLL="lib/*.dll"
+ASSETS="assets/*"
 
 mkdir -p bin/Release/assets
 mkdir -p bin/Debug/assets
 
-cp $GLSL bin/Release/assets
-cp $GLSL bin/Debug/assets
-cp $DLL bin/Release
-cp $DLL bin/Debug
+cp src/*.glsl bin/Release/assets
+cp src/*.glsl bin/Debug/assets
+cp lib/*.dll bin/Release
+cp lib/*.dll bin/Debug
+cp assets/* bin/Release/assets
+cp assets/* bin/Debug/assets
+
+if [ "$TYPE" == "Debug" ] ; then
+    exit
+fi
 
 cd bin/Release
 ./main.exe
