@@ -301,13 +301,13 @@ vec2 uv_from_ray(vec3 N, vec3 p){
 
 vec3 trace(vec3 rd, vec3 eye, inout uint s){
     float e = 0.001;
-    vec3 col = vec3(0.0, 0.0, 0.0);
-    vec3 mask = vec3(1.0, 1.0, 1.0);
+    vec3 col = vec3(0.0);
+    vec3 mask = vec3(1.0);
     
-    for(int i = 0; i < 3; i++){    // bounces
+    for(int i = 1; i <= 3; i++){
         vec2 sam;
         
-        for(int j = 0; j < 45; j++){ // steps
+        for(int j = 0; j < 60; j++){
             sam = sdf_map(eye);
             if(abs(sam.x) < e){
                 break;
@@ -333,8 +333,8 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
             eye += N * e * 10.0f;
         }
         
-        col += mask * emit.rgb;
-        mask *= 2.0 * refl.rgb * abs(dot(N, rd));
+        col += clamp(mask * emit.rgb, 0.0, 1.0);
+        mask *= clamp(2.0 * refl.rgb * abs(dot(N, rd)), 0.0, 1.0);
     }
     
     return col;
@@ -350,7 +350,7 @@ void main(){
     const vec2 uv = (vec2(pix + aa) / vec2(size))* 2.0 - 1.0;
     const vec3 rd = normalize(toWorld(uv.x, uv.y, 0.0) - EYE);
     
-    vec3 col = clamp(trace(rd, EYE, s), vec3(0.0), vec3(1.0));
+    vec3 col = clamp(trace(rd, EYE, s), 0.0, 1.0);
     const vec3 oldcol = imageLoad(color, pix).rgb;
     
     col = mix(oldcol, col, 1.0 / SAMPLES);

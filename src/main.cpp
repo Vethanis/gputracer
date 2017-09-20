@@ -65,16 +65,22 @@ class SDF {
 public:
     SDF(){}
     SDF(const edit_params& params){
+        static int id = 0;
         inv_xform = glm::inverse(
-            glm::translate({}, params.t) * 
-            glm::orientate4(params.r) * 
-            glm::scale({}, params.s)
+            glm::translate({}, params.t) *
+            glm::orientate4(params.r) 
         );
         parameters = vec4(
             float(params.dis_type),
             float(params.blend_type),
             params.smoothness,
             float(params.mat_id)
+        );
+        extra_params = vec4(
+            float(id++),
+            1.0f,
+            0.0f,
+            0.0f
         );
     }
 };
@@ -160,8 +166,7 @@ bool v3_equal(const glm::vec3& a, const glm::vec3& b){
 void editing_behaviour(Input& input, Camera& cam, SDF_Edits& edits){
     static edit_params params;
 
-    params.t = cam.getEye() + cam.getAxis() * (1.0f + params.s.z * params.s.x * params.s.y);
-    params.r = cam.getAxis();
+    params.t = cam.getEye() + cam.getAxis() * 5.0f;
 
     bool shouldAppend = false;
 
@@ -171,8 +176,8 @@ void editing_behaviour(Input& input, Camera& cam, SDF_Edits& edits){
                 shouldAppend = true;
             break;
             case GLFW_KEY_1:
-            break;
                 params.dis_type = glm::clamp(params.dis_type - 1, 0, SDF_TYPE_COUNT - 1);
+            break;
             case GLFW_KEY_2:
                 params.dis_type = glm::clamp(params.dis_type + 1, 0, SDF_TYPE_COUNT - 1);
             break;
