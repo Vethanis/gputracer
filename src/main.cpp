@@ -52,9 +52,12 @@ struct edit_params{
     vec3 t, r, s;
     int dis_type, blend_type, mat_id;
     float smoothness;
+    float uv_scale;
     edit_params(){
         memset(this, 0, sizeof(*this));
         smoothness = 0.5f;
+        uv_scale = 1.0f;
+        s = vec3(1.0f);
     }
 };
 
@@ -68,7 +71,8 @@ public:
         static int id = 0;
         inv_xform = glm::inverse(
             glm::translate({}, params.t) *
-            glm::orientate4(params.r) 
+            glm::orientate4(params.r) *
+            glm::scale({}, params.s)
         );
         parameters = vec4(
             float(params.dis_type),
@@ -78,7 +82,7 @@ public:
         );
         extra_params = vec4(
             float(id++),
-            1.0f,
+            params.uv_scale,
             0.0f,
             0.0f
         );
@@ -188,16 +192,16 @@ void editing_behaviour(Input& input, Camera& cam, SDF_Edits& edits){
                 params.blend_type = glm::clamp(params.blend_type + 1, 0, SDF_BLEND_COUNT - 1);
             break;
             case GLFW_KEY_5:
-                params.smoothness *= 0.99f;
+                params.smoothness *= 0.9f;
             break;
             case GLFW_KEY_6:
-                params.smoothness *= 1.01f;
+                params.smoothness *= 1.1f;
             break;
             case GLFW_KEY_UP:
-                params.s *= 1.01f;
+                params.s *= 1.1f;
             break;
             case GLFW_KEY_DOWN:
-                params.s *= 0.99f;
+                params.s *= 0.9f;
             break;
             case GLFW_KEY_LEFT:
                 params.mat_id = glm::clamp(params.mat_id - 1, 0, MATERIAL_COUNT - 1);

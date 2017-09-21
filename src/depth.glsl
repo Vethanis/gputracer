@@ -161,7 +161,7 @@ vec2 sdf_distance(int i, vec3 point){
     // transform point into unit sphere space
     vec4 xpoint = sdf_inv_transform(i) * vec4(point.xyz, 1.0);
     point = (xpoint / xpoint.w).xyz;
-
+    
     // use unit-sphere sdfs
     switch(sdf_distance_type(i)){
         case SDF_SPHERE: return sdf_sphere(i, point);
