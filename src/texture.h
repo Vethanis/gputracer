@@ -77,9 +77,7 @@ struct Texture{
         MYGLERRORMACRO    
         glBindTexture(GL_TEXTURE_2D, handle);    
         MYGLERRORMACRO
-        glBindImageTexture(channel, handle, 0, GL_FALSE, 0, GL_READ_WRITE, FullType); 
-        MYGLERRORMACRO 
-        prog.setUniformInt(uname, channel);    
+        prog.setUniformInt(uname, channel);
     }
     void setCSBinding(int binding, int mode=GL_READ_ONLY){
         glBindImageTexture(binding, handle, 0, GL_FALSE, 0, mode, FullType);

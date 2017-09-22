@@ -78,6 +78,7 @@ uniform sampler2D normalTex3;
 vec4 sdf_reflectance_texture(int i, vec2 uv){
     int mat_id = sdf_material_id(i);
     switch(mat_id){
+        default:
         case 0: return texture(reflectanceTex0, uv);
         case 1: return texture(reflectanceTex1, uv);
         case 2: return texture(reflectanceTex2, uv);
@@ -89,6 +90,7 @@ vec4 sdf_reflectance_texture(int i, vec2 uv){
 vec4 sdf_emittance_texture(int i, vec2 uv){
     int mat_id = sdf_material_id(i);
     switch(mat_id){
+        default:
         case 0: return texture(emittanceTex0, uv);
         case 1: return texture(emittanceTex1, uv);
         case 2: return texture(emittanceTex2, uv);
@@ -99,13 +101,19 @@ vec4 sdf_emittance_texture(int i, vec2 uv){
 
 vec3 sdf_normal_texture(int i, vec2 uv){
     int mat_id = sdf_material_id(i);
+    vec3 v = vec3(0.0, 0.0, 0.5);
     switch(mat_id){
-        case 0: return texture(normalTex0, uv).rgb;
-        case 1: return texture(normalTex1, uv).rgb;
-        case 2: return texture(normalTex2, uv).rgb;
-        case 3: return texture(normalTex3, uv).rgb;
+        default:
+        case 0: v = texture(normalTex0, uv).rgb;
+        break;
+        case 1: v = texture(normalTex1, uv).rgb;
+        break;
+        case 2: v = texture(normalTex2, uv).rgb;
+        break;
+        case 3: v = texture(normalTex3, uv).rgb;
+        break;
     }
-    return vec3(0.0, 0.0, -1.0);
+    return normalize(v * 2.0 - 1.0);
 }
 
 float vmax(vec3 a){
@@ -161,7 +169,7 @@ vec2 sdf_distance(int i, vec3 point){
     // transform point into unit sphere space
     vec4 xpoint = sdf_inv_transform(i) * vec4(point.xyz, 1.0);
     point = (xpoint / xpoint.w).xyz;
-    
+
     // use unit-sphere sdfs
     switch(sdf_distance_type(i)){
         case SDF_SPHERE: return sdf_sphere(i, point);

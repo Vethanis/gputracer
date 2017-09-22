@@ -261,10 +261,37 @@ int main(int argc, char* argv[]){
     uni.nfwh = glm::vec4(camera.getNear(), camera.getFar(), (float)WIDTH, (float)HEIGHT);
     UBO unibuf(&uni, sizeof(uni), 2);
 
-    Texture4uc textures[3];
-    textures[0].init("assets/pt_tex_reflection.png");
-    textures[1].init("assets/pt_tex_emissive.png");
-    textures[2].init("assets/pt_tex_normal.png");
+    const int num_channels = 3;
+    const int num_textures = num_channels * 3;
+    int texture_unit_capacity = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_unit_capacity);
+    assert(num_textures < texture_unit_capacity);
+    const char* textureFiles[] = {
+        "assets/pt_tex_emissive.png",
+        "assets/pt_tex_normal.png",
+        "assets/pt_tex_reflection.png",
+        "assets/light_emissive.png",
+        "assets/light_normal.png",
+        "assets/light_reflection.png",
+        "assets/wood_emissive.png",
+        "assets/wood_normal.png",
+        "assets/wood_reflection.png"
+    };
+    const char* samplerNames[] = {
+        "emittanceTex0",
+        "normalTex0",
+        "reflectanceTex0",
+        "emittanceTex1",
+        "normalTex1",
+        "reflectanceTex1",
+        "emittanceTex2",
+        "normalTex2",
+        "reflectanceTex2",
+    };
+    Texture4uc textures[num_textures];
+    for(int i = 0; i < num_textures; ++i){
+        textures[i].init(textureFiles[i]);
+    }
 
     input.poll();
     unsigned i = 0;
@@ -286,9 +313,9 @@ int main(int argc, char* argv[]){
         editing_behaviour(input, camera, edits);
         
         depth.bind();
-        textures[0].bind(4, "reflectanceTex0", depth);
-        textures[1].bind(5, "emittanceTex0", depth);
-        textures[2].bind(6, "normalTex0", depth);
+        for(int i = 0; i < num_textures; ++i){
+            textures[i].bind(4 + i, samplerNames[i], depth);
+        }
         edits.uniform(depth);
         depth.call(callsizeX, callsizeY, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
