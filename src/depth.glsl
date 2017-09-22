@@ -312,7 +312,7 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
     vec3 col = vec3(0.0);
     vec3 mask = vec3(1.0);
     
-    for(int i = 1; i <= 3; i++){
+    for(int i = 1; i <= 4; i++){
         vec2 sam;
         
         for(int j = 0; j < 60; j++){
@@ -322,23 +322,26 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
             }
             eye = eye + rd * sam.x;
         }
-        
-        vec3 N = sdf_map_normal(eye);
+
+        mat3 TBN;
+        TBN[2] = sdf_map_normal(eye);
+        TBN[0] = normalize(cross(TBN[2], normalize(vec3(0.01 * rand(s), 1.0, 0.0))));
+        TBN[1] = cross(TBN[2], TBN[0]);
 
         const int sdf_id = int(sam.y);
         if(sdf_id < 0 || sdf_id >= num_sdfs)
             break;
 
-        const vec2 uv = uv_from_ray(N, eye) * sdf_uv_scale(sdf_id);
+        const vec2 uv = uv_from_ray(TBN[2], eye) * sdf_uv_scale(sdf_id);
         const vec4 refl = sdf_reflectance_texture(sdf_id, uv);
         const vec4 emit = sdf_emittance_texture(sdf_id, uv);
-        const vec3 tN = sdf_normal_texture(sdf_id, uv);
+        const vec3 N = TBN * sdf_normal_texture(sdf_id, uv);
         
         {   // update direction
             const vec3 I = rd;
-            rd = uniHemi(N, s);
-            rd = roughBlend(rd, I, N, sdf_roughness(refl));
-            eye += N * e * 10.0f;
+            rd = uniHemi(TBN[2], s);
+            rd = roughBlend(rd, I, TBN[2], sdf_roughness(refl));
+            eye += TBN[2] * e * 10.0f;
         }
         
         col += clamp(mask * emit.rgb, 0.0, 1.0);
