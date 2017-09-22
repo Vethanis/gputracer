@@ -315,7 +315,7 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
     for(int i = 1; i <= 4; i++){
         vec2 sam;
         
-        for(int j = 0; j < 60; j++){
+        for(int j = 0; j < 60 / i; j++){
             sam = sdf_map(eye);
             if(abs(sam.x) < e){
                 break;
@@ -339,9 +339,9 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
         
         {   // update direction
             const vec3 I = rd;
-            rd = uniHemi(TBN[2], s);
-            rd = roughBlend(rd, I, TBN[2], sdf_roughness(refl));
-            eye += TBN[2] * e * 10.0f;
+            rd = uniHemi(N, s);
+            rd = roughBlend(rd, I, N, sdf_roughness(refl));
+            eye += N * e * 10.0f;
         }
         
         col += clamp(mask * emit.rgb, 0.0, 1.0);
