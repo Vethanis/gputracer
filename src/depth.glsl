@@ -33,7 +33,6 @@
 #define sdf_blend_type(i) int(sdfs[i].parameters.y)
 #define sdf_blend_smoothness(i) sdfs[i].parameters.z
 #define sdf_material_id(i) int(sdfs[i].parameters.w)
-#define sdf_roughness(refl) refl.w
 #define sdf_uv_scale(i) sdfs[i].extra_params.y
 
 layout(local_size_x = 8, local_size_y = 8) in;
@@ -60,60 +59,40 @@ layout(binding=3) buffer SDF_BUF {
 
 uniform int num_sdfs;
 
-uniform sampler2D reflectanceTex0;
-uniform sampler2D reflectanceTex1;
-uniform sampler2D reflectanceTex2;
-uniform sampler2D reflectanceTex3;
+uniform sampler2D albedo0;
+uniform sampler2D albedo1;
+uniform sampler2D albedo2;
+uniform sampler2D albedo3;
 
-uniform sampler2D emittanceTex0;
-uniform sampler2D emittanceTex1;
-uniform sampler2D emittanceTex2;
-uniform sampler2D emittanceTex3;
+uniform sampler2D normal0;
+uniform sampler2D normal1;
+uniform sampler2D normal2;
+uniform sampler2D normal3;
 
-uniform sampler2D normalTex0;
-uniform sampler2D normalTex1;
-uniform sampler2D normalTex2;
-uniform sampler2D normalTex3;
-
-vec4 sdf_reflectance_texture(int i, vec2 uv){
+// w is emission
+vec4 sdf_albedo_texture(int i, vec2 uv){
     int mat_id = sdf_material_id(i);
     switch(mat_id){
         default:
-        case 0: return texture(reflectanceTex0, uv);
-        case 1: return texture(reflectanceTex1, uv);
-        case 2: return texture(reflectanceTex2, uv);
-        case 3: return texture(reflectanceTex3, uv);
+        case 0: return texture(albedo0, uv);
+        case 1: return texture(albedo1, uv);
+        case 2: return texture(albedo2, uv);
+        case 3: return texture(albedo3, uv);
     }
     return vec4(0.0);
 }
 
-vec4 sdf_emittance_texture(int i, vec2 uv){
+// w is roughness
+vec4 sdf_normal_texture(int i, vec2 uv){
     int mat_id = sdf_material_id(i);
     switch(mat_id){
         default:
-        case 0: return texture(emittanceTex0, uv);
-        case 1: return texture(emittanceTex1, uv);
-        case 2: return texture(emittanceTex2, uv);
-        case 3: return texture(emittanceTex3, uv);
+        case 0: return texture(normal0, uv);
+        case 1: return texture(normal1, uv);
+        case 2: return texture(normal2, uv);
+        case 3: return texture(normal3, uv);
     }
     return vec4(0.0);
-}
-
-vec3 sdf_normal_texture(int i, vec2 uv){
-    int mat_id = sdf_material_id(i);
-    vec3 v = vec3(0.0, 0.0, 0.5);
-    switch(mat_id){
-        default:
-        case 0: v = texture(normalTex0, uv).rgb;
-        break;
-        case 1: v = texture(normalTex1, uv).rgb;
-        break;
-        case 2: v = texture(normalTex2, uv).rgb;
-        break;
-        case 3: v = texture(normalTex3, uv).rgb;
-        break;
-    }
-    return normalize(v * 2.0 - 1.0);
 }
 
 float vmax(vec3 a){
@@ -308,7 +287,7 @@ vec2 uv_from_ray(vec3 N, vec3 p){
 }
 
 vec3 trace(vec3 rd, vec3 eye, inout uint s){
-    float e = 0.001;
+    const float e = 0.001;
     vec3 col = vec3(0.0);
     vec3 mask = vec3(1.0);
     
@@ -333,19 +312,22 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
             break;
 
         const vec2 uv = uv_from_ray(TBN[2], eye) * sdf_uv_scale(sdf_id);
-        const vec4 refl = sdf_reflectance_texture(sdf_id, uv);
-        const vec4 emit = sdf_emittance_texture(sdf_id, uv);
-        const vec3 N = TBN * sdf_normal_texture(sdf_id, uv);
+        const vec4 albedo = sdf_albedo_texture(sdf_id, uv);
+        const vec4 tN = sdf_normal_texture(sdf_id, uv);
+        const vec3 N = TBN * normalize(tN.xyz * 2.0 - 1.0);
         
         {   // update direction
             const vec3 I = rd;
             rd = uniHemi(N, s);
-            rd = roughBlend(rd, I, N, sdf_roughness(refl));
-            eye += N * e * 10.0f;
+            rd = roughBlend(rd, I, N, tN.w);
+            eye += N * e * 3.0f;
         }
-        
-        col += clamp(mask * emit.rgb, 0.0, 1.0);
-        mask *= clamp(2.0 * refl.rgb * abs(dot(N, rd)), 0.0, 1.0);
+
+        const vec3 transmission = mask * albedo.rgb * albedo.a;
+        const vec3 reflectance = 2.0 * max(0.0, dot(N, rd)) * albedo.rgb;
+
+        col += transmission;
+        mask *= reflectance;
     }
     
     return col;

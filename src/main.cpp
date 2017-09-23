@@ -223,7 +223,7 @@ void editing_behaviour(Input& input, Camera& cam, SDF_Edits& edits){
 
 int main(int argc, char* argv[]){
     srand((unsigned)time(NULL));
-    int WIDTH = 1280, HEIGHT = 720;
+    int WIDTH = 1920, HEIGHT = 1080;
     if(argc == 3){
         WIDTH = atoi(argv[1]);
         HEIGHT = atoi(argv[2]);
@@ -261,32 +261,26 @@ int main(int argc, char* argv[]){
     uni.nfwh = glm::vec4(camera.getNear(), camera.getFar(), (float)WIDTH, (float)HEIGHT);
     UBO unibuf(&uni, sizeof(uni), 2);
 
-    const int num_channels = 3;
+    const int num_channels = 2;
     const int num_textures = num_channels * 3;
     int texture_unit_capacity = 0;
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_unit_capacity);
     assert(num_textures < texture_unit_capacity);
     const char* textureFiles[] = {
-        "assets/pt_tex_emissive.png",
-        "assets/pt_tex_normal.png",
-        "assets/pt_tex_reflection.png",
-        "assets/light_emissive.png",
+        "assets/light_albedo.png",
         "assets/light_normal.png",
-        "assets/light_reflection.png",
-        "assets/wood_emissive.png",
+        "assets/wood_albedo.png",
         "assets/wood_normal.png",
-        "assets/wood_reflection.png"
+        "assets/copper_albedo.png",
+        "assets/copper_normal.png",
     };
     const char* samplerNames[] = {
-        "emittanceTex0",
-        "normalTex0",
-        "reflectanceTex0",
-        "emittanceTex1",
-        "normalTex1",
-        "reflectanceTex1",
-        "emittanceTex2",
-        "normalTex2",
-        "reflectanceTex2",
+        "albedo0",
+        "normal0",
+        "albedo1",
+        "normal1",
+        "albedo2",
+        "normal2",
     };
     Texture4uc textures[num_textures];
     for(int i = 0; i < num_textures; ++i){

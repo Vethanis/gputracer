@@ -1,5 +1,7 @@
 # gpu path tracer
 
+![An example output.](output.png)
+
 __[Video](https://www.youtube.com/watch?v=U3DYW4FLjCc&feature=youtu.be)__
 
 __Controls:__
