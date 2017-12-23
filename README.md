@@ -1,6 +1,7 @@
 # gpu path tracer
 
 __Video:__
+
 [![](http://img.youtube.com/vi/6zpkfS8ZBzE/0.jpg)](https://www.youtube.com/watch?v=6zpkfS8ZBzE)
 
 __Controls:__
