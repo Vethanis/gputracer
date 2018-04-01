@@ -69,6 +69,11 @@ uniform sampler2D normal1;
 uniform sampler2D normal2;
 uniform sampler2D normal3;
 
+uniform sampler2D material0;
+uniform sampler2D material1;
+uniform sampler2D material2;
+uniform sampler2D material3;
+
 // w is emission
 vec4 sdf_albedo_texture(int i, vec2 uv){
     int mat_id = sdf_material_id(i);
@@ -82,7 +87,6 @@ vec4 sdf_albedo_texture(int i, vec2 uv){
     return vec4(0.0);
 }
 
-// w is roughness
 vec4 sdf_normal_texture(int i, vec2 uv){
     int mat_id = sdf_material_id(i);
     switch(mat_id){
@@ -91,6 +95,18 @@ vec4 sdf_normal_texture(int i, vec2 uv){
         case 1: return texture(normal1, uv);
         case 2: return texture(normal2, uv);
         case 3: return texture(normal3, uv);
+    }
+    return vec4(0.0);
+}
+
+vec4 sdf_material_texture(int i, vec2 uv){
+    int mat_id = sdf_material_id(i);
+    switch(mat_id){
+        default:
+        case 0: return texture(material0, uv);
+        case 1: return texture(material1, uv);
+        case 2: return texture(material2, uv);
+        case 3: return texture(material3, uv);
     }
     return vec4(0.0);
 }
@@ -286,15 +302,75 @@ vec2 uv_from_ray(vec3 N, vec3 p){
     return vec2(p.x, p.y);
 }
 
+float DisGGX(vec3 N, vec3 H, float roughness)
+{
+    const float a = roughness * roughness;
+    const float a2 = a * a;
+    const float NdH = max(dot(N, H), 0.0);
+    const float NdH2 = NdH * NdH;
+
+    const float nom = a2;
+    const float denom_term = (NdH2 * (a2 - 1.0) + 1.0);
+    const float denom = 3.141592 * denom_term * denom_term;
+
+    return nom / denom;
+}
+
+float GeomSchlickGGX(float NdV, float roughness)
+{
+    const float r = (roughness + 1.0);
+    const float k = (r * r) / 8.0;
+
+    const float nom = NdV;
+    const float denom = NdV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+
+float GeomSmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    const float NdV = max(dot(N, V), 0.0);
+    const float NdL = max(dot(N, L), 0.0);
+    const float ggx2 = GeomSchlickGGX(NdV, roughness);
+    const float ggx1 = GeomSchlickGGX(NdL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+vec3 pbr_lighting(vec3 V, vec3 L, vec3 N, vec3 albedo, float metalness, float roughness)
+{
+    const float NdL = max(0.0, dot(N, L));
+    const vec3 F0 = mix(vec3(0.04), albedo, metalness);
+    const vec3 H = normalize(V + L);
+
+    const float NDF = DisGGX(N, H, roughness);
+    const float G = GeomSmith(N, V, L, roughness);
+    const vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    const vec3 nom = NDF * G * F;
+    const float denom = 4.0 * max(dot(N, V), 0.0) * NdL + 0.001;
+    const vec3 specular = nom / denom;
+
+    const vec3 kS = F;
+    const vec3 kD = (vec3(1.0) - kS) * (1.0 - metalness);
+
+    return (kD * albedo / 3.141592 + specular) * NdL;
+}
+
 vec3 trace(vec3 rd, vec3 eye, inout uint s){
     const float e = 0.001;
     vec3 col = vec3(0.0);
     vec3 mask = vec3(1.0);
     
-    for(int i = 1; i <= 4; i++){
+    for(int i = 0; i < 5; i++){
         vec2 sam;
         
-        for(int j = 0; j < 60 / i; j++){
+        for(int j = 0; j < 60; j++){
             sam = sdf_map(eye);
             if(abs(sam.x) < e){
                 break;
@@ -302,32 +378,31 @@ vec3 trace(vec3 rd, vec3 eye, inout uint s){
             eye = eye + rd * sam.x;
         }
 
-        mat3 TBN;
-        TBN[2] = sdf_map_normal(eye);
-        TBN[0] = normalize(cross(TBN[2], normalize(vec3(0.01 * rand(s), 1.0, 0.0))));
-        TBN[1] = cross(TBN[2], TBN[0]);
-
         const int sdf_id = int(sam.y);
         if(sdf_id < 0 || sdf_id >= num_sdfs)
             break;
 
-        const vec2 uv = uv_from_ray(TBN[2], eye) * sdf_uv_scale(sdf_id);
-        const vec4 albedo = sdf_albedo_texture(sdf_id, uv);
-        const vec4 tN = sdf_normal_texture(sdf_id, uv);
-        const vec3 N = TBN * normalize(tN.xyz * 2.0 - 1.0);
-        
-        {   // update direction
-            const vec3 I = rd;
-            rd = uniHemi(N, s);
-            rd = roughBlend(rd, I, N, tN.w);
-            eye += N * e * 3.0f;
+        vec3 N;
+        vec2 uv;
+        {
+            mat3 TBN;
+            TBN[2] = sdf_map_normal(eye);
+            TBN[0] = normalize(cross(TBN[2], normalize(vec3(0.01 * rand(s), 1.0, 0.0))));
+            TBN[1] = cross(TBN[2], TBN[0]);
+            uv = uv_from_ray(TBN[2], eye) * sdf_uv_scale(sdf_id);
+            const vec4 tN = sdf_normal_texture(sdf_id, uv);
+            N = TBN * normalize(tN.xyz * 2.0 - 1.0);
         }
+        
+        const vec3 V = -rd;
+        rd = uniHemi(N, s);
+        eye += N * e * 4.0f;
 
-        const vec3 transmission = mask * albedo.rgb * albedo.a;
-        const vec3 reflectance = 2.0 * max(0.0, dot(N, rd)) * albedo.rgb;
+        const vec4 albedo = sdf_albedo_texture(sdf_id, uv);
+        const vec4 material = sdf_material_texture(sdf_id, uv);
 
-        col += transmission;
-        mask *= reflectance;
+        col += mask * albedo.rgb * albedo.a * 100.0;
+        mask *= pbr_lighting(V, rd, N, albedo.xyz, material.x, material.y);
     }
     
     return col;
@@ -343,7 +418,7 @@ void main(){
     const vec2 uv = (vec2(pix + aa) / vec2(size))* 2.0 - 1.0;
     const vec3 rd = normalize(toWorld(uv.x, uv.y, 0.0) - EYE);
     
-    vec3 col = clamp(trace(rd, EYE, s), 0.0, 1.0);
+    vec3 col = trace(rd, EYE, s);
     const vec3 oldcol = imageLoad(color, pix).rgb;
     
     col = mix(oldcol, col, 1.0 / SAMPLES);

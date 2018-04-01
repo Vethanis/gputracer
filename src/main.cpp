@@ -13,7 +13,7 @@
 #include "texture.h"
 #include "time.h"
 #include <random>
-#include "string.h"
+#include "array.h"
 #include "image.h"
 #include <glm/gtx/euler_angles.hpp> 
 
@@ -41,33 +41,40 @@
 using namespace std;
 using namespace glm;
 
-struct Uniforms{
+struct Uniforms
+{
     glm::mat4 IVP;
     glm::vec4 eye;
     glm::vec4 nfwh;
     glm::vec4 seed;
 };
 
-struct edit_params{
+struct edit_params
+{
     vec3 t, r, s;
     int dis_type, blend_type, mat_id;
     float smoothness;
     float uv_scale;
-    edit_params(){
-        memset(this, 0, sizeof(*this));
+    edit_params()
+    {
+        dis_type = 0;
+        blend_type = 0;
+        mat_id = 0;
         smoothness = 0.5f;
         uv_scale = 1.0f;
         s = vec3(1.0f);
     }
 };
 
-class SDF {
+class SDF 
+{
     mat4 inv_xform;
     vec4 parameters; // [dis_type, blend_type, smoothness, material_id]
     vec4 extra_params; // [object_id, uv_scale]
 public:
     SDF(){}
-    SDF(const edit_params& params){
+    SDF(const edit_params& params)
+    {
         static int id = 0;
         inv_xform = glm::inverse(
             glm::translate({}, params.t) *
@@ -89,63 +96,38 @@ public:
     }
 };
 
-class SDF_Edits{
-    SDF* sdfs;
+class SDF_Edits
+{
+    Vector<SDF> sdfs;
     SSBO ssbo;
-    int capacity;
-    int tail;
 public:
-    SDF_Edits() : sdfs(nullptr), capacity(0), tail(0){
+    void init(int binding)
+    {
+        sdfs.grow();
+        ssbo.init(nullptr, 32 * sizeof(SDF), binding);
     }
-    ~SDF_Edits(){
-        delete[] sdfs;
+    void add_edit()
+    {
+        sdfs.grow();
     }
-    void init(int cap, int channel){
-        if(sdfs){
-            delete[] sdfs;
-        }
-        capacity = cap;
-        tail = 0;
-        if(capacity){
-            sdfs = new SDF[capacity];
-        }
-        ssbo.init(sdfs, sizeof(SDF) * tail, channel);
-    }
-    void add_edit(const edit_params& params){
-        assert(sdfs && tail < capacity);
-        sdfs[tail++] = SDF(params);
-        if(tail >= capacity){
-            const int new_capacity = capacity << 1;
-            SDF* new_sdfs = new SDF[new_capacity];
-            memcpy(new_sdfs, sdfs, sizeof(SDF) * tail);
-            delete[] sdfs;
-            sdfs = new_sdfs;
-            capacity = new_capacity;
-        }
-    }
-    void update_brush(const edit_params& params){
-        if(!capacity){
-            capacity = 8;
-            tail = 1;
-            sdfs = new SDF[capacity];
-        }
-        if(!tail)
-            ++tail;
-        
-        sdfs[0] = SDF(params);
+    void update_brush(const edit_params& params)
+    {
+        sdfs.back() = SDF(params);
     }
     void undo(){
-        if(tail > 0){
-            --tail;
+        if(sdfs.count() > 1)
+        {
+            sdfs.pop();
         }
     }
     void uniform(ComputeShader& shader){
-        shader.setUniformInt("num_sdfs", tail);
-        ssbo.upload(sdfs, sizeof(SDF) * tail);
+        shader.setUniformInt("num_sdfs", sdfs.count());
+        ssbo.upload(sdfs.begin(), sdfs.bytes());
     }
 };
 
-float frameBegin(unsigned& i, float& t){
+float frameBegin(unsigned& i, float& t)
+{
     float dt = (float)glfwGetTime() - t;
     t += dt;
     i++;
@@ -167,61 +149,74 @@ bool v3_equal(const glm::vec3& a, const glm::vec3& b){
     return absSum(a - b) == 0.0f;
 }
 
-void editing_behaviour(Input& input, Camera& cam, SDF_Edits& edits){
+bool editing_behaviour(Input& input, Camera& cam, SDF_Edits& edits)
+{
     static edit_params params;
 
     params.t = cam.getEye() + cam.getAxis() * 5.0f;
 
-    bool shouldAppend = false;
+    bool anyEdit = false;
 
     for(int* i = input.beginDownKeys(); i != input.endDownKeys(); ++i){
         switch(*i){
             case GLFW_MOUSE_BUTTON_1:
-                shouldAppend = true;
+                edits.add_edit();
+                anyEdit = true;
             break;
             case GLFW_KEY_1:
                 params.dis_type = glm::clamp(params.dis_type - 1, 0, SDF_TYPE_COUNT - 1);
+                anyEdit = true;
             break;
             case GLFW_KEY_2:
                 params.dis_type = glm::clamp(params.dis_type + 1, 0, SDF_TYPE_COUNT - 1);
+                anyEdit = true;
             break;
             case GLFW_KEY_3:
                 params.blend_type = glm::clamp(params.blend_type - 1, 0, SDF_BLEND_COUNT - 1);
+                anyEdit = true;
             break;
             case GLFW_KEY_4:
                 params.blend_type = glm::clamp(params.blend_type + 1, 0, SDF_BLEND_COUNT - 1);
+                anyEdit = true;
             break;
             case GLFW_KEY_5:
                 params.smoothness *= 0.9f;
+                anyEdit = true;
             break;
             case GLFW_KEY_6:
                 params.smoothness *= 1.1f;
+                anyEdit = true;
             break;
             case GLFW_KEY_UP:
                 params.s *= 1.1f;
+                anyEdit = true;
             break;
             case GLFW_KEY_DOWN:
                 params.s *= 0.9f;
+                anyEdit = true;
             break;
             case GLFW_KEY_LEFT:
-                params.mat_id = glm::clamp(params.mat_id - 1, 0, MATERIAL_COUNT - 1);
+                params.mat_id = glm::clamp(params.mat_id - 1, 0, 3 - 1);
+                anyEdit = true;
             break;
             case GLFW_KEY_RIGHT:
-                params.mat_id = glm::clamp(params.mat_id + 1, 0, MATERIAL_COUNT - 1);
+                params.mat_id = glm::clamp(params.mat_id + 1, 0, 3 - 1);
+                anyEdit = true;
             break;
             case GLFW_KEY_Z:
                 edits.undo();
+                anyEdit = true;
             break;
         }
     }
 
     edits.update_brush(params);
-    if(shouldAppend){
-        edits.add_edit(params);
-    }
+
+    return anyEdit;
 }
 
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[])
+{
     srand((unsigned)time(NULL));
     int WIDTH = 1920, HEIGHT = 1080;
     if(argc == 3){
@@ -253,7 +248,7 @@ int main(int argc, char* argv[]){
     Timer timer;
     SDF_Edits edits;
 
-    edits.init(32, 3);
+    edits.init(3);
     
     Uniforms uni;
     uni.IVP = camera.getIVP();
@@ -261,7 +256,7 @@ int main(int argc, char* argv[]){
     uni.nfwh = glm::vec4(camera.getNear(), camera.getFar(), (float)WIDTH, (float)HEIGHT);
     UBO unibuf(&uni, sizeof(uni), 2);
 
-    const int num_channels = 2;
+    const int num_channels = 3;
     const int num_textures = num_channels * 3;
     int texture_unit_capacity = 0;
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_unit_capacity);
@@ -269,18 +264,24 @@ int main(int argc, char* argv[]){
     const char* textureFiles[] = {
         "assets/light_albedo.png",
         "assets/light_normal.png",
+        "assets/light_specular.png",
         "assets/wood_albedo.png",
         "assets/wood_normal.png",
+        "assets/wood_specular.png",
         "assets/copper_albedo.png",
         "assets/copper_normal.png",
+        "assets/copper_specular.png"
     };
     const char* samplerNames[] = {
         "albedo0",
         "normal0",
+        "material0",
         "albedo1",
         "normal1",
+        "material1",
         "albedo2",
         "normal2",
+        "material2"
     };
     Texture4uc textures[num_textures];
     for(int i = 0; i < num_textures; ++i){
@@ -290,21 +291,25 @@ int main(int argc, char* argv[]){
     input.poll();
     unsigned i = 0;
     float frame = 1.0f;
-    float irm = 1.0f / RAND_MAX;
+    constexpr float irm = 1.0f / RAND_MAX;
     float t = (float)glfwGetTime();
-    while(window.open()){
+    while(window.open())
+    {
         glm::vec3 eye = camera.getEye();
         glm::vec3 at = camera.getAt();
         input.poll(frameBegin(i, t), camera);
         if(!v3_equal(eye, camera.getEye()) || !v3_equal(at, camera.getAt()))
             frame = 2.0f;
         
+        if(editing_behaviour(input, camera, edits))
+        {
+            frame = 2.0f;
+        }
+
         uni.IVP = camera.getIVP();
         uni.eye = glm::vec4(camera.getEye(), 1.0f);
         uni.seed = glm::vec4(rand() * irm, rand() * irm, rand() * irm, frame);
         unibuf.upload(&uni, sizeof(uni));
-
-        editing_behaviour(input, camera, edits);
         
         depth.bind();
         for(int i = 0; i < num_textures; ++i){
